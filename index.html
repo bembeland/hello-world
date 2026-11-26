@@ -75,6 +75,20 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <p style="font-size:13px;color:#555"><strong>Your criteria applied:</strong> 🏟️ Fortress home (×1.15) only Arsenal, Brighton, Bournemouth, Brentford, Hull — others ×1.00 · cut to ×1.07 when Liverpool/Arsenal visit · ⚔️ derbies: home advantage OFF · 🇪🇺 Europe (UCL: ARS/MCI/MUN/AVL/LIV · UEL: BOU/SUN/CRY · UECL: BHA): −8% away / −4% home in the GW after a European game (+Thu bonus), +2% season-load from GW18, cap −12%. Tags show per row.</p>
 <p style="font-size:14px"><strong>⭐ Focus model (detailed, commentary-based):</strong> <span id="focusChips"></span><br><span style="color:#666">Detailed chances/conversion/travel analysis is limited to these six. Other clubs keep the standard model — a standardised model was not working for every team.</span></p>
 <div id="focusPanel" style="display:none;background:#faf5ff;border:1px solid #e5d5f5;border-radius:14px;padding:14px 16px;margin:10px 0;line-height:1.6"></div>
+<div style="background:#fff8e6;border:1px solid #f0d48a;border-radius:14px;padding:14px 16px;margin:10px 0;line-height:1.6">
+<strong>📊 Focus-six: what actually moves the NEXT game?</strong> Measured on the six teams' GW1–11 (60 next-game observations; residual = actual goals − model prediction for that game). Small samples — direction, not gospel.
+<table><thead><tr><th>Factor (previous / current condition)</th><th>n</th><th>Scoring vs prediction</th><th>Pts/game</th><th>Reading</th></tr></thead><tbody>
+<tr><td>Playing away straight after a European midweek</td><td>13</td><td><strong>−0.18</strong></td><td>1.77</td><td>The fatigue effect is real but modest — and mostly an <em>away</em> effect</td></tr>
+<tr><td>Post-Europe at home</td><td>12</td><td>+0.4 approx (all post-Europe +0.15)</td><td>~2.2</td><td>Home comfort largely cancels the midweek</td></tr>
+<tr><td>After a blowout loss (≥3 goals) last week</td><td>4</td><td><strong>+0.82</strong></td><td>2.25</td><td>Bounce-back is the biggest single effect we measured</td></tr>
+<tr><td>After a blowout win (≥3) last week</td><td>9</td><td>−0.24</td><td>2.11</td><td>Mild hangover / regression after big wins</td></tr>
+<tr><td>Finished cold last week (scored ≥1 below prediction)</td><td>18</td><td><strong>+0.51</strong></td><td>2.11</td><td>Finishing regresses <em>up</em> — cold teams bounce</td></tr>
+<tr><td>Finished hot last week (≥1 above prediction)</td><td>16</td><td>+0.16</td><td>1.94</td><td>Hot finishing barely persists</td></tr>
+<tr><td>Chelsea (no-Europe control group)</td><td>10</td><td>−0.02</td><td>1.30</td><td>Rest alone isn't winning games — their problem is elsewhere</td></tr>
+</tbody></table>
+<p style="font-size:13px"><strong>Per-team post-Europe split (why one penalty can't fit all):</strong> Brighton <strong>+0.87</strong> after Thursday games (thriving) · Liverpool +0.18 · Man City +0.12 · Arsenal −0.22 · Man Utd −0.20 (and only 0.6 pts/game in those weeks). Next refit: team-specific fatigue coefficients instead of one universal −8%/−4%.</p>
+<p style="font-size:13px"><strong>Verified commentary events (BBC key-events, extracted so far):</strong> GW1 — João Gomes (Aston Villa) red 40' at Brighton (0–4). GW6 — Gravenberch (Liverpool) red 62' v Man City, all 3 City goals after it. GW11 — Yoro (Man Utd) red 8' at Liverpool (goals 10', 13'); Costinha (Hull) sent off before Hull's two stoppage-time goals v Brighton. Full automated extraction for all 56 focus-team matches is the next build — these four already explain two of Liverpool's biggest model errors.</p>
+</div>
 <div id="clubKpis" class="kpis" style="margin:8px 0"></div>
 <div style="height:340px"><canvas id="clubChart"></canvas></div>
 <div id="clubBacktest" class="kpis" style="margin:8px 0"></div>
