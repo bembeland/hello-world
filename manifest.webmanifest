@@ -1,0 +1,14 @@
+{
+  "name": "Premier League xG Distribution — Club Predictions",
+  "short_name": "PL xG Curve",
+  "description": "League-wide Premier League 2026-27 xG distribution curve with per-club weekly predictions for Gameweeks 12-38.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#37003c",
+  "theme_color": "#37003c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

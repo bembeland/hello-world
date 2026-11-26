@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premier League 2026–27 — xG Distribution Curve (GW1–38)</title>
+<meta name="description" content="Premier League 2026-27 xG distribution curve with per-club weekly predictions for GW12-38. Installable PWA.">
+<meta name="theme-color" content="#37003c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PL xG Curve">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pl:#37003c;--pl2:#5b005f;--pink:#ff2882;--green:#00ff85;--teal:#04f5ff;--bg:#120016;--card:#ffffff;--ink:#1d1d1f;--mut:#666}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f4f0f5;color:var(--ink)}
+.hero{background:linear-gradient(135deg,var(--pl) 0%,#7a0070 55%,var(--pink) 130%);color:#fff;padding:44px 22px 30px}
+.wrap{max-width:1180px;margin:auto}.hero h1{font-family:Archivo,sans-serif;font-size:clamp(30px,5vw,56px);line-height:.95;margin:6px 0 12px;letter-spacing:-.02em}
+.hero p{max-width:820px;line-height:1.6;color:#f5dff2}.badge{display:inline-block;background:var(--green);color:#063b1e;font-weight:800;padding:6px 10px;border-radius:999px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:22px auto}
+.kpi,.card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(55,0,60,.10)}
+.kpi b{font-family:Archivo;font-size:30px;color:var(--pl)} .kpi span{display:block;color:var(--mut);font-size:13px;line-height:1.45;margin-top:4px}
+.card{margin:18px auto}.card h2{font-family:Archivo;color:var(--pl);margin:0 0 8px;font-size:26px}.card p,.card li{line-height:1.65;color:#3c3c40}
+canvas{width:100%!important;max-height:560px}.bell canvas{max-height:380px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}@media(max-width:900px){.grid{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:var(--pl);color:#fff;padding:10px;text-align:left;position:sticky;top:0}td{padding:8px 10px;border-bottom:1px solid #eee}.proj{color:#8a0050;font-weight:700}.act{color:#007a3d;font-weight:700}
+.scroll{max-height:520px;overflow:auto;border-radius:12px;border:1px solid #eee}
+.note{background:#fff4fa;border-left:5px solid var(--pink);padding:14px 16px;border-radius:12px;line-height:1.6}
+a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-height:1.6}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eee;font-size:11px;font-weight:800}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+<span class="badge">Premier League · 2026–27 · League-wide</span>
+<h1>Life is like a<br>distribution curve.</h1>
+<p><strong>Expected Goals (xG) scored &amp; conceded, Gameweeks 1–38.</strong> GW1–11 are played (21 Aug–23 Nov 2026, labelled with real dates). GW12–38 are statistical projections (labelled with the known fixture-calendar dates). Most weeks cluster near the mean — the magic, and the misery, live in the tails.</p>
+<p><button id="installBtn" style="display:none;background:var(--green);color:#063b1e;border:0;padding:12px 18px;border-radius:999px;font-weight:900;cursor:pointer">📲 Install this app</button> <span style="font-size:13px">Now a Progressive Web App: install it, open it offline, and filter by club below for weekly predictions.</span></p>
+</div></header>
+
+<main class="wrap">
+<section class="kpis">
+<div class="kpi"><b>1.41</b><span><strong>Mean xG scored</strong> per team, per match — GW1–11 (Opta-calibrated, see Methodology)</span></div>
+<div class="kpi"><b>0.26</b><span><strong>SD of a gameweek average</strong> (σ of the 11 GW means). A single team-match varies far more.</span></div>
+<div class="kpi"><b>303</b><span><strong>Actual goals</strong> in 110 matches = 2.75 / match (FBref scores, counted match-by-match)</span></div>
+<div class="kpi"><b>310.69</b><span><strong>Season Opta xG</strong> summed over all 20 clubs (Squawka) = 2.82 xG / match, 1.41 / team</span></div>
+<div class="kpi"><b>GW6 · GW8</b><span><strong>The tails:</strong> highest GW mean 1.85 (10–12 Oct) · lowest 0.97 (23–25 Oct)</span></div>
+</section>
+
+<section class="card">
+<h2>📈 Distribution curve — xG by gameweek (GW1–38)</h2>
+<p><strong>Definition (read this first):</strong> one “team-match” is one club playing one match. League-wide <em>xG Scored per team-match</em> = total xG created in the gameweek ÷ 20. <em>xG Conceded per team-match</em> = total xG allowed ÷ 20. League-wide these two totals <strong>must be equal</strong> — every chance created by someone is conceded by someone else — so the purple and teal league lines overlap by definition. That is not a bug; it is the mirror at the heart of football. To show the two perspectives separately, the chart also splits <strong>home scoring</strong> (= away conceding) and <strong>away scoring</strong> (= home conceding), which genuinely differ week to week. Pink shading is the projected 68% band (±1σ), lighter pink the 95% band (±1.96σ), widening the further we project.</p>
+<div style="height:520px"><canvas id="main"></canvas></div>
+<p class="note"><strong>Actual vs Projected:</strong> solid = GW1–11 actual (goals-anchored xG estimate, labelled <em>est.</em> in the table). Dashed from GW12 = projected mean (flat at μ = 1.41, because the GW1–11 trend slope is only −0.016 xG/GW — noise, not a trend worth extrapolating). <strong>Gold = Fourier layer (new):</strong> gold solid is the low-pass Fourier smoothing of GW1–11; gold dashed is the regularised seasonal-harmonic projection for GW12–38 (see next section — and why the naive version was rejected). Toggle any series in the legend. Hover any point for its date.</p>
+</section>
+
+<section class="card">
+<h2>🌊 Fourier series — removing noise, honestly</h2>
+<p><strong>Is it doable? Yes — in two distinct jobs, with one hard limit.</strong> A Fourier series writes a wavy series as a sum of sines/cosines: <code>xG(t) = a₀ + Σ [aₖ·cos(2πkt/P) + bₖ·sin(2πkt/P)]</code>. Low frequencies = slow waves (seasonal drift, congestion cycles, form waves); high frequencies = week-to-week noise. Keeping only the low frequencies is a <em>low-pass filter</em> — it denoises. Projecting the slow waves forward is a <em>harmonic projection</em> — but only if the wave's period has actually been observed.</p>
+<p><strong>What was applied here (gold lines):</strong></p>
+<ul>
+<li><strong>Denoising GW1–11:</strong> discrete Fourier low-pass keeping frequencies k = 0, 1, 2 over the 11-week window (periods 11 and 5.5 gameweeks). It explains 65% of the weekly variance (R² = 0.65) and smooths GW1–11 to: 1.66, 1.44, 1.29, 1.39, 1.60, 1.62, 1.37, 1.09, 1.08, 1.36, 1.65. With only 11 points and 5 effective parameters this is descriptive smoothing, not proof of a cycle — a 5.5-week “wave” here is two bumps, not a law of nature.</li>
+<li><strong>Projecting GW12–38:</strong> harmonic regression on the true seasonal periods (P = 38 and P = 19 gameweeks), <strong>ridge-regularised (λ = 5)</strong> so the wave amplitude stays small. Result: a gentle wave between 1.37 and 1.50 instead of a flat 1.41 — i.e. Fourier, properly disciplined, mostly agrees with the mean and adds only a mild seasonal tilt (slightly higher around GW17–19 and GW36–38 in this fit; do not over-read the phase, it is fitted on 11 points).</li>
+<li><strong>Why not the naive Fourier projection?</strong> We tried it: an unregularised P = 38/19 fit on GW1–11 is ill-conditioned (we have seen only 29% of one season-cycle, so the sine/cosine columns almost cancel) and extrapolates to an absurd xG of 2 → <strong>35</strong> by mid-season. That model was rejected and is shown here as a warning: <em>Fourier will happily invent a wave you have not observed.</em> Any Fourier projection of a full-season period needs at least one full season — ideally several — of history to be identifiable.</li>
+</ul>
+<h3 style="color:var(--pl)">Residuals: what's left after the wave is removed</h3>
+<p>The bars below are <strong>actual − Fourier-smoothed</strong> for GW1–11. These residuals are where one-off shocks would live. Largest: <strong>GW6 +0.23</strong> (still high even after smoothing — a genuinely chance-rich week), <strong>GW2 +0.20, GW10 +0.17</strong>; negative: <strong>GW5 −0.22, GW1/GW3/GW8 ≈ −0.11</strong>.</p>
+<div style="height:280px"><canvas id="resid"></canvas></div>
+<h3 style="color:var(--pl)">Can a residual tell us “that was an injury / a red card / the weather”?</h3>
+<p><strong>Not from league-wide xG alone — and anyone who claims otherwise is over-fitting a story to a wiggle.</strong> With 11 league-level data points you cannot separate five causes (weather, pitch, congestion, red cards, injuries): that is more explanations than observations, and a league average hides which team/player was affected (the ecological fallacy). What Fourier <em>does</em> give you is a clean, dated list of anomalies to investigate. Attribution then becomes doable — at <strong>match-team level (220 rows in GW1–11, 760 over a season)</strong>, like this:</p>
+<table><thead><tr><th>Suspected cause</th><th>Data to join (per match)</th><th>How you'd test it</th><th>Watch out for</th></tr></thead><tbody>
+<tr><td>Red card</td><td>Player, minute, score at dismissal (FBref match reports)</td><td>xG before vs after the card; add “minutes played with 10 men” to a match-team regression</td><td>Cards often happen <em>because</em> a team is already under pressure — reverse causality</td></tr>
+<tr><td>Injury to a clinical player</td><td>Minutes lost by high-xG / high-conversion players; return dates</td><td>Team xG For in matches missed vs played, adjusted for opponent &amp; venue</td><td>“Clinical” must be defined before looking (e.g. top-quartile xG/90 last season), or it's cherry-picking</td></tr>
+<tr><td>Fixture congestion</td><td>Days since previous match, midweek European/cup game, travel distance</td><td>Harmonic term + rest-days covariate; congestion is only partly periodic, so Fourier alone misses cup weeks</td><td>Strong teams have more congestion <em>and</em> deeper squads</td></tr>
+<tr><td>Weather / pitch</td><td>Rain, wind, temperature at stadium &amp; kick-off (e.g. Met Office); pitch reports</td><td>Match-level covariate in the regression; expect small effects on xG, larger on finishing</td><td>Weather hits both teams in the same match — use home/away or total-xG contrasts</td></tr>
+</tbody></table>
+<p><strong>The full recipe, if we had that data:</strong> (1) fit the Fourier/harmonic baseline per team-match with team attacking &amp; defensive strengths; (2) add the covariates above; (3) a residual spike is only “explained” if the covariate was present, in the right matches, with the right sign and a plausible size — and it survives out-of-sample testing on later gameweeks. Until then, GW6's spike is a <em>question</em> (“what happened that week?”), not an answer. That discipline is the difference between Fourier analysis and Fourier astrology.</p>
+</section>
+
+<section class="card" id="clubSection">
+<h2>⚽ Club filter — weekly predictions (GW12–38)</h2>
+<p>Pick a club. Its <strong>attack strength</strong> = its Opta xG For per match ÷ league mean (1.41); its <strong>defensive weakness</strong> = its xG Against per match ÷ league mean. A weekly prediction is then: <code>predicted xG = 1.41 × attack(you) × defensive-weakness(opponent) × venue (home 1.15 / away 0.85) × Fourier league wave for that GW</code>. Win/draw/loss chances and the most likely score come from independent Poisson distributions on the two predicted xGs. Fixtures: published 2026–27 calendar (NBC/Premier League, subject to TV moves). Strengths are frozen at GW11 — as real weeks are played, a live version would refit them weekly.</p>
+<label for="clubSelect" style="font-weight:800;color:var(--pl)">Club:</label>
+<select id="clubSelect" style="font-size:17px;padding:10px 14px;border-radius:10px;border:2px solid var(--pl);margin:8px 0 14px;max-width:100%"></select>
+<div id="clubKpis" class="kpis" style="margin:8px 0"></div>
+<div style="height:340px"><canvas id="clubChart"></canvas></div>
+<div class="scroll" style="margin-top:16px"><table id="clubTbl"><thead><tr><th>GW</th><th>Date</th><th>Fixture</th><th>Venue</th><th>Pred. xG For</th><th>Pred. xG Against</th><th>Most likely score</th><th>W / D / L %</th><th>Expected pts</th></tr></thead><tbody></tbody></table></div>
+<p class="note" id="clubNote"></p>
+</section>
+
+<div class="grid">
+<section class="card bell">
+<h2>🔔 The bell curve underneath</h2>
+<p>Normal fit to the 11 gameweek averages: <strong>N(μ = 1.41, σ = 0.26)</strong>. About 68% of gameweeks should land between <strong>1.16–1.67</strong> xG per team-match, and 95% between <strong>0.90–1.92</strong>. Ticks under the curve are the real GW1–11 values — note GW6 out on the right tail and GW8 on the left. Across individual clubs the spread is similar in centre but personal: team xG For per match ranges 1.00 (Hull) to 1.87 (Brighton); xG Against 0.97 (Arsenal) to 2.03 (Crystal Palace) — same league mirror, very different lives inside it.</p>
+<div style="height:340px"><canvas id="bell"></canvas></div>
+</section>
+<section class="card">
+<h2>💡 What the curve says</h2>
+<ul>
+<li><strong>The middle is normal life.</strong> 7 of the first 11 gameweeks sit inside the 68% band. A “typical” Premier League week in 2026–27 creates about 1.4 xG per team — roughly 28 xG, and about 27–28 goals, across 10 matches.</li>
+<li><strong>Tails win headlines.</strong> GW6 (36 goals, 1.85 est. xG/team) was a right-tail festival; GW8 (19 goals, 0.97) was the left-tail grind. Neither redefines the league — the curve expects roughly 1 week in 20 outside the 95% band.</li>
+<li><strong>Scored = conceded, league-wide.</strong> There is no league-wide “attacking era” without a simultaneous “conceding era”. Clubs move along the curve; the league’s mirror total only moves when chance quality itself moves.</li>
+<li><strong>Projection ≠ prediction of a week.</strong> GW12–38’s flat line is the centre of the distribution, not a forecast that every week will be 1.41. Expect most weeks inside the pink, a few flirting with the edges — that <em>is</em> the forecast.</li>
+<li><strong>Finishing bends reality, briefly.</strong> After GW11 Chelsea had 20 goals from 13.74 xG (+6.26) and Forest 9 from 16.91 (−7.91) per Squawka/Opta. The curve’s quiet promise is regression toward the middle.</li>
+</ul>
+</section>
+</div>
+
+<section class="card">
+<h2>🗂️ Data table — GW1–38</h2>
+<p><span class="pill">ACTUAL</span> GW1–11: goals are exact (FBref); xG is a transparent calibrated estimate (Methodology). <span class="pill">PROJECTED</span> GW12–38: centre = μ, bands widen with horizon. xG Conceded (league) equals xG Scored (league) by the mirror identity explained above.</p>
+<div class="scroll"><table id="tbl"><thead><tr><th>GW</th><th>Dates (2026–27)</th><th>Status</th><th>Goals / match (actual)</th><th>xG Scored / team-match</th><th>xG Conceded / team-match</th><th>Fourier smoothed / projected</th><th>Residual (actual − Fourier)</th><th>68% band</th><th>95% band</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section class="card">
+<h2>🧪 Methodology &amp; sources</h2>
+<p><strong>Actual goals (exact):</strong> every GW1–11 scoreline was counted from FBref’s 2026–27 Premier League Scores &amp; Fixtures (110 matches, 303 goals). Per-GW goals/match: GW1 3.00, GW2 3.20, GW3 2.30, GW4 2.90, GW5 2.70, GW6 3.60, GW7 2.60, GW8 1.90, GW9 2.10, GW10 3.00, GW11 3.00.</p>
+<p><strong>From goals to xG (transparent estimate, never silent invention):</strong> free per-gameweek Opta xG is not published as a clean series — FBref lost its Opta advanced feed in Jan 2026 and Understat has been offline since 2 Nov 2026 (see sources). So GW xG is estimated as <code>GW goals ÷ 20 × (season Opta xG ÷ season goals)</code>, where season Opta xG = <strong>310.69</strong> (sum of all 20 clubs’ xG For in Squawka’s Opta table after GW11; the xG Against column sums to the identical 310.69, a good internal check) and season goals = 303. Calibration factor = 1.025. Cross-checks: this gives GW11 = 3.08 xG/match vs Squawka’s published GW11 Opta match values summing to 3.26/match (−5.8%); a different model (prematchstats) puts the season at 2.93 xG/match and xgstat’s GW1 at 3.43/match — xG models differ, which is exactly why the estimate is labelled <em>est.</em> everywhere.</p>
+<p><strong>Projection (GW12–38):</strong> fit N(μ, σ) to the 11 GW-average xG values (μ = 1.412, sample σ = 0.257). Projected centre is flat at μ ( fitted slope −0.016/GW is negligible). Forecast σ grows with horizon h gameweeks ahead as <code>σ·√(1 + h/11)</code>, so the 68% (±1σ) and 95% (±1.96σ) bands widen — by GW38 the 95% band is roughly 0.48–2.35. Dates for GW12–38 are the published fixture-calendar gameweek start dates (subject to change for TV).</p>
+<p><strong>Fourier layer:</strong> (i) in-sample denoising = DFT low-pass, keeping rFFT bins k = 0,1,2 of the 11-point GW series (numpy <code>rfft/irfft</code>, zeroing bins ≥3), R² = 0.65, residuals listed in the table; (ii) forward wave = harmonic regression on periods 38 &amp; 19 GW with ridge penalty λ = 5 on the harmonic coefficients (intercept unpenalised), giving GW12–38 values in the table (range 1.37–1.50). The unregularised version of (ii) was computed, produced a nonsensical 2→35 xG extrapolation, and was discarded — reported here so the choice is auditable. Fourier terms capture only <em>smooth, periodic</em> structure; congestion from cup/European fixtures, red cards, injuries and weather are not periodic and enter only as match-level covariates in the residual analysis described in the Fourier section, which requires event data not in the league-wide series.</p>
+<p><strong>Sources:</strong></p>
+<ul>
+<li>FBref — 2026–2027 Premier League Scores &amp; Fixtures (scorelines, dates): <a href="https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures">fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures</a></li>
+<li>Squawka (Opta) — Premier League xG Table 2026/27, updated 26 Nov 2026 after GW11 (cumulative xG For/Against; GW11 match xG): <a href="https://www.squawka.com/en/features/premier-league-xg-table/">squawka.com/en/features/premier-league-xg-table</a></li>
+<li>BBC Sport — Premier League table after GW11 (cross-check of goals/points, updated 24 Nov 2026): <a href="https://www.bbc.co.uk/sport/football/premier-league/table">bbc.co.uk/sport/football/premier-league/table</a></li>
+<li>prematchstats — Premier League xG Stats 26/27 (alternative model: 2.93 xG vs 2.75 goals per match): <a href="https://prematchstats.com/england/premier-league/xg">prematchstats.com/england/premier-league/xg</a></li>
+<li>xgstat — GW1 fixtures &amp; xG (alternative model cross-check; notes Understat offline since 2 Nov 2026): <a href="https://www.xgstat.com/competitions/premier-league/fixtures?gameweek=1">xgstat.com/competitions/premier-league/fixtures?gameweek=1</a></li>
+<li>Footly — 2026–27 gameweek calendar (GW12–38 dates): <a href="https://footly.co.uk/gameweek/">footly.co.uk/gameweek</a> · Premier League — all 380 fixtures 2026/27: <a href="https://www.premierleague.com/en/news/4675097/all-380-fixtures-for-season-2026-27-premier-league-season">premierleague.com</a></li>
+<li>SportsDataStack — why FBref no longer carries 2026–27 xG (Opta feed removed 20 Jan 2026): <a href="https://sportsdatastack.com/leagues/premier-league/xg/">sportsdatastack.com/leagues/premier-league/xg</a></li>
+</ul>
+<p><em>Built 26 Nov 2026 (America/Toronto). xG providers run different models; treat single-week estimates as ±~0.2 xG. This is a statistical illustration, not betting advice.</em></p>
+</section>
+</main>
+<footer class="foot"><div class="wrap">Premier League purple (#37003C) theme · Chart.js via CDN · Single-file app — open <code>index.html</code>, no build step. Data as cited above.</div></footer>
+
+<script>
+const MU=1.412, SD=0.257, CAL=310.69/303;
+// gw, label, dates, goalsPerMatch (null=proj), homeGoals, awayGoals
+const actual=[
+[1,"21–24 Aug 2026",3.00,22,8],[2,"28–31 Aug 2026",3.20,15,17],[3,"4–6 Sep 2026",2.30,11,12],[4,"12–14 Sep 2026",2.90,11,18],[5,"18–20 Sep 2026",2.70,17,10],[6,"10–12 Oct 2026",3.60,21,15],[7,"17–19 Oct 2026",2.60,16,10],[8,"23–25 Oct 2026",1.90,8,11],[9,"31 Oct–2 Nov 2026",2.10,14,7],[10,"6–8 Nov 2026",3.00,18,12],[11,"21–23 Nov 2026",3.00,21,9]];
+const projDates=["27–29 Nov 2026","1–3 Dec 2026","5–6 Dec 2026","12 Dec 2026*","19 Dec 2026*","26 Dec 2026*","30 Dec 2026*","2 Jan 2027*","6 Jan 2027*","16 Jan 2027*","23 Jan 2027*","30 Jan 2027*","6 Feb 2027*","10 Feb 2027*","20 Feb 2027*","27 Feb 2027*","3 Mar 2027*","13 Mar 2027*","20 Mar 2027*","10 Apr 2027*","17 Apr 2027*","24 Apr 2027*","1 May 2027*","8 May 2027*","15 May 2027*","23 May 2027*","30 May 2027*"];
+const labels=[],dateMap={},scored=[],conceded=[],homeS=[],awayS=[],proj=[],b68u=[],b68l=[],b95u=[],b95l=[];
+for(let gw=1;gw<=38;gw++){
+ labels.push("GW"+gw);
+ if(gw<=11){const a=actual[gw-1];dateMap[gw]=a[1];const v=a[2]/2*CAL;scored.push(+v.toFixed(3));conceded.push(+v.toFixed(3));homeS.push(+(a[3]/10*CAL).toFixed(2));awayS.push(+(a[4]/10*CAL).toFixed(2));proj.push(gw===11?+v.toFixed(3):null);b68u.push(null);b68l.push(null);b95u.push(null);b95l.push(null);}
+ else{dateMap[gw]=projDates[gw-12]+" (Projected)";scored.push(null);conceded.push(null);homeS.push(null);awayS.push(null);proj.push(MU);const h=gw-11,s=SD*Math.sqrt(1+h/11);b68u.push(+(MU+s).toFixed(3));b68l.push(+(MU-s).toFixed(3));b95u.push(+(MU+1.96*s).toFixed(3));b95l.push(+Math.max(0,MU-1.96*s).toFixed(3));}
+}
+// bridge bands at GW11
+b68u[10]=+(scored[10]); b68l[10]=+(scored[10]); b95u[10]=+(scored[10]); b95l[10]=+(scored[10]);
+// Fourier: DFT low-pass (k<=2) smoothed GW1-11; ridge (lambda=5) seasonal harmonic P=38/19 projected GW12-38
+const FOUR_SMOOTH=[1.656,1.439,1.290,1.391,1.599,1.618,1.366,1.085,1.079,1.364,1.647];
+const FOUR_PROJ=[1.392,1.408,1.425,1.442,1.456,1.468,1.475,1.477,1.474,1.466,1.455,1.442,1.429,1.418,1.409,1.404,1.404,1.409,1.419,1.432,1.447,1.463,1.477,1.489,1.496,1.498,1.494];
+const fourSmoothFull=labels.map((_,i)=>i<11?FOUR_SMOOTH[i]:(i===11?FOUR_SMOOTH[10]:null));
+const fourProjFull=labels.map((_,i)=>i<11?null:FOUR_PROJ[i-11]); fourProjFull[10]=FOUR_SMOOTH[10];
+const tip={callbacks:{title:i=>labels[i[0].dataIndex]+" · "+dateMap[i[0].dataIndex],label:c=>" "+c.dataset.label+": "+(c.parsed.y==null?"—":c.parsed.y.toFixed(2)+" xG / team-match")}};
+new Chart(document.getElementById('main'),{type:'line',data:{labels,datasets:[
+ {label:'95% projection band (upper)',data:b95u,borderColor:'rgba(255,40,130,0)',backgroundColor:'rgba(255,40,130,.10)',fill:false,pointRadius:0},
+ {label:'95% band',data:b95l,borderColor:'rgba(255,40,130,0)',backgroundColor:'rgba(255,40,130,.10)',fill:'-1',pointRadius:0},
+ {label:'68% projection band (upper)',data:b68u,borderColor:'rgba(255,40,130,0)',backgroundColor:'rgba(255,40,130,.22)',fill:false,pointRadius:0},
+ {label:'68% band',data:b68l,borderColor:'rgba(255,40,130,0)',backgroundColor:'rgba(255,40,130,.22)',fill:'-1',pointRadius:0},
+ {label:'xG Scored — league avg (Actual GW1–11, est.)',data:scored,borderColor:'#37003c',backgroundColor:'#37003c',borderWidth:3,pointRadius:4,tension:.25},
+ {label:'xG Conceded — league avg (mirror: overlaps Scored)',data:conceded,borderColor:'#00b8a9',borderWidth:2,borderDash:[6,5],pointRadius:0,tension:.25},
+ {label:'Projected mean xG (GW12–38)',data:proj,borderColor:'#ff2882',backgroundColor:'#ff2882',borderWidth:3,borderDash:[8,5],pointRadius:3,tension:0},
+ {label:'Home xG Scored (= Away xG Conceded), est.',data:homeS,borderColor:'#b266ff',borderWidth:1.5,pointRadius:2,tension:.25},
+ {label:'Away xG Scored (= Home xG Conceded), est.',data:awayS,borderColor:'#04a5c0',borderWidth:1.5,pointRadius:2,tension:.25},
+ {label:'Fourier smoothed (GW1–11, low-pass k≤2)',data:fourSmoothFull,borderColor:'#e69f00',backgroundColor:'#e69f00',borderWidth:3,pointRadius:3,tension:.35},
+ {label:'Fourier projection (GW12–38, ridge seasonal wave)',data:fourProjFull,borderColor:'#e69f00',backgroundColor:'#e69f00',borderWidth:2.5,borderDash:[4,3],pointRadius:2,tension:.35},
+]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'},tooltip:tip,title:{display:true,text:'xG scored & conceded per team-match — Actual (GW1–11) vs Projected (GW12–38)',font:{size:15,weight:'bold'}}},scales:{x:{title:{display:true,text:'Gameweek (Games 1–38) — GW1–11 actual dates · GW12–38 projected dates on hover'},grid:{color:c=>c.tick&&c.tick.value===10?'#ff2882':'#eee'},ticks:{maxRotation:45}},y:{title:{display:true,text:'xG per team, per match'},suggestedMin:0.4,suggestedMax:2.4}}}});
+// bell
+function pdf(x){return Math.exp(-0.5*((x-MU)/SD)**2)/(SD*Math.sqrt(2*Math.PI))}
+const xs=[],all=[],in68=[],in95=[];
+for(let x=0.5;x<=2.35;x+=0.02){xs.push(+x.toFixed(2));all.push(+pdf(x).toFixed(3));in68.push(x>=MU-SD&&x<=MU+SD?+pdf(x).toFixed(3):null);in95.push(x>=MU-1.96*SD&&x<=MU+1.96*SD?+pdf(x).toFixed(3):null);}
+new Chart(document.getElementById('bell'),{type:'line',data:{labels:xs,datasets:[
+ {label:'95% range',data:in95,borderColor:'rgba(255,40,130,0)',backgroundColor:'rgba(255,40,130,.18)',fill:'origin',pointRadius:0},
+ {label:'68% range (±1σ)',data:in68,borderColor:'rgba(55,0,60,0)',backgroundColor:'rgba(55,0,60,.55)',fill:'origin',pointRadius:0},
+ {label:'Normal fit N(1.41, 0.26)',data:all,borderColor:'#37003c',borderWidth:2.5,fill:false,pointRadius:0,tension:.3},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:'Distribution of a gameweek-average xG (per team-match)'}},scales:{x:{title:{display:true,text:'xG per team-match'},ticks:{maxTicksLimit:10}},y:{title:{display:true,text:'Probability density'}}}}});
+// ---- Club filter & weekly predictions ----
+// code: [name, league pts after GW11, goals for, goals against, Opta xG For (11 GW), Opta xG Against] - Squawka/Opta + BBC
+const CLUBS={
+ARS:["Arsenal",28,17,7,16.61,10.71],AVL:["Aston Villa",14,14,17,14.41,18.33],BOU:["Bournemouth",18,18,14,18.37,11.88],BRE:["Brentford",17,20,11,16.17,14.88],BHA:["Brighton & Hove Albion",22,26,9,20.56,14.78],CHE:["Chelsea",16,20,20,13.74,17.30],COV:["Coventry City",12,13,21,11.16,16.65],CRY:["Crystal Palace",7,12,27,15.58,22.34],EVE:["Everton",16,12,14,14.09,16.07],FUL:["Fulham",11,11,13,14.52,15.02],HUL:["Hull City",14,13,11,11.01,16.78],IPS:["Ipswich Town",11,15,22,12.08,19.28],LEE:["Leeds United",17,14,9,16.39,12.73],LIV:["Liverpool",21,18,10,18.58,13.69],MCI:["Manchester City",22,22,14,19.66,11.75],MUN:["Manchester United",8,14,23,17.04,19.75],NEW:["Newcastle United",13,15,18,13.11,17.73],NFO:["Nottingham Forest",9,9,15,16.91,12.88],SUN:["Sunderland",9,8,17,15.25,15.11],TOT:["Tottenham Hotspur",15,12,11,15.45,13.03]};
+// GW12-38 fixtures, HOME-AWAY per match (NBC / Premier League published calendar)
+const FIX=["NFO-CHE,LEE-COV,MUN-BRE,IPS-AVL,EVE-LIV,BHA-NEW,CRY-HUL,SUN-TOT,FUL-BOU,ARS-MCI","COV-IPS,CHE-CRY,HUL-NFO,LIV-SUN,MCI-LEE,BOU-BHA,AVL-EVE,BRE-ARS,NEW-MUN,TOT-FUL","CHE-LIV,AVL-CRY,BOU-HUL,LEE-IPS,MUN-COV,NFO-BHA,BRE-MCI,EVE-FUL,NEW-SUN,TOT-ARS","FUL-BRE,IPS-NEW,LIV-LEE,MCI-CHE,ARS-BOU,BHA-EVE,SUN-NFO,COV-AVL,CRY-MUN,HUL-TOT","BRE-NEW,BOU-COV,LEE-FUL,MCI-HUL,NFO-EVE,LIV-TOT,BHA-IPS,SUN-CRY,ARS-MUN,CHE-AVL","AVL-LEE,EVE-SUN,FUL-BHA,IPS-BRE,TOT-BOU,HUL-LIV,NEW-MCI,COV-CHE,MUN-NFO,CRY-ARS","HUL-LEE,TOT-BHA,EVE-MCI,COV-BRE,CRY-BOU,FUL-ARS,MUN-SUN,NEW-NFO,AVL-LIV,IPS-CHE","LEE-EVE,BHA-MUN,ARS-IPS,BRE-CRY,LIV-COV,NFO-FUL,SUN-HUL,BOU-AVL,CHE-NEW,MCI-TOT","ARS-BRE,BHA-BOU,EVE-AVL,NFO-HUL,SUN-LIV,CRY-CHE,FUL-TOT,IPS-COV,LEE-MCI,MUN-NEW","BOU-IPS,AVL-MUN,BRE-BHA,CHE-SUN,COV-EVE,HUL-ARS,LIV-CRY,MCI-NFO,NEW-FUL,TOT-LEE","ARS-NEW,BHA-MCI,CRY-TOT,EVE-BRE,FUL-AVL,IPS-HUL,LEE-CHE,MUN-LIV,NFO-BOU,SUN-COV","BOU-FUL,AVL-IPS,BRE-MUN,CHE-NFO,COV-LEE,HUL-CRY,LIV-EVE,MCI-ARS,NEW-BHA,TOT-SUN","ARS-LIV,BHA-HUL,CRY-COV,EVE-NEW,FUL-MCI,IPS-TOT,LEE-BOU,MUN-CHE,NFO-BRE,SUN-AVL","AVL-BOU,COV-LIV,CRY-BRE,EVE-LEE,FUL-NFO,HUL-SUN,IPS-ARS,MUN-BHA,NEW-CHE,TOT-MCI","BOU-CRY,ARS-FUL,BRE-COV,BHA-TOT,CHE-IPS,LEE-AVL,LIV-HUL,MCI-NEW,NFO-MUN,SUN-EVE","AVL-CHE,COV-BOU,CRY-SUN,EVE-NFO,FUL-LEE,HUL-MCI,IPS-BHA,MUN-ARS,NEW-BRE,TOT-LIV","BOU-TOT,ARS-CRY,BRE-IPS,BHA-FUL,CHE-COV,LEE-HUL,LIV-AVL,MCI-EVE,NFO-NEW,SUN-MUN","BOU-NEW,AVL-HUL,CHE-ARS,COV-MCI,CRY-FUL,LEE-BHA,LIV-IPS,MUN-EVE,SUN-BRE,TOT-NFO","ARS-SUN,BRE-BOU,BHA-COV,EVE-TOT,FUL-LIV,HUL-CHE,IPS-CRY,MCI-MUN,NEW-LEE,NFO-AVL","BOU-MCI,AVL-BHA,CHE-FUL,COV-ARS,CRY-EVE,LEE-NFO,LIV-NEW,MUN-HUL,SUN-IPS,TOT-BRE","ARS-AVL,BRE-LEE,BHA-CHE,EVE-BOU,FUL-SUN,HUL-COV,IPS-MUN,MCI-CRY,NEW-TOT,NFO-LIV","BOU-ARS,AVL-COV,BRE-FUL,CHE-MCI,EVE-BHA,LEE-LIV,MUN-CRY,NEW-IPS,NFO-SUN,TOT-HUL","ARS-TOT,BHA-NFO,COV-MUN,CRY-AVL,FUL-EVE,HUL-BOU,IPS-LEE,LIV-CHE,MCI-BRE,SUN-NEW","BOU-MUN,BRE-AVL,BHA-SUN,EVE-HUL,FUL-IPS,LEE-ARS,MCI-LIV,NEW-COV,NFO-CRY,TOT-CHE","ARS-NFO,AVL-NEW,CHE-EVE,COV-TOT,CRY-BHA,HUL-FUL,IPS-MCI,LIV-BRE,MUN-LEE,SUN-BOU","BOU-CHE,BRE-HUL,BHA-LIV,EVE-ARS,FUL-COV,LEE-SUN,MCI-AVL,NEW-CRY,NFO-IPS,TOT-MUN","ARS-BHA,AVL-TOT,CHE-BRE,COV-NFO,CRY-LEE,HUL-NEW,IPS-EVE,LIV-BOU,MUN-FUL,SUN-MCI"];
+function pois(l){const p=[Math.exp(-l)];for(let k=1;k<=10;k++)p.push(p[k-1]*l/k);return p}
+let clubChart=null;
+function renderClub(code){
+ const c=CLUBS[code], atk=(c[4]/11)/MU, defW=(c[5]/11)/MU;
+ const sel=document.getElementById('clubSelect'); sel.value=code;
+ let rows='',labelsC=[],xf=[],xa=[],totXP=0,totXGF=0,totXGA=0;
+ FIX.forEach((gws,i)=>{const gw=12+i; let fixture=null,home=false,opp=null;
+   gws.split(',').forEach(m=>{const [h,a]=m.split('-'); if(h===code){fixture=m;home=true;opp=a} if(a===code){fixture=m;home=false;opp=h}});
+   const o=CLUBS[opp], oAtk=(o[4]/11)/MU, oDef=(o[5]/11)/MU, wave=FOUR_PROJ[i]/MU;
+   const myXG=MU*atk*oDef*(home?1.15:0.85)*wave, opXG=MU*oAtk*defW*(home?0.85:1.15)*wave;
+   const ph=pois(home?myXG:opXG), pa=pois(home?opXG:myXG);
+   let W=0,D=0,best='',bp=-1;
+   for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){const p=ph[hg]*pa[ag]; if(hg>ag)W+=p; else if(hg===ag)D+=p; if(p>bp){bp=p;best=hg+'–'+ag}}
+   const myW=home?W:(()=>{let s=0;for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){if(ag>hg)s+=ph[hg]*pa[ag]}return s})(), myL=Math.max(0,1-myW-D), xp=3*myW+D;
+   totXP+=xp; totXGF+=myXG; totXGA+=opXG; labelsC.push('GW'+gw); xf.push(+myXG.toFixed(2)); xa.push(+opXG.toFixed(2));
+   const [hc,ac]=fixture.split('-');
+   rows+=`<tr><td>GW${gw}</td><td>${dateMap[gw].replace(' (Projected)','')}</td><td>${CLUBS[hc][0]} v ${CLUBS[ac][0]}</td><td>${home?'Home':'Away'}</td><td>${myXG.toFixed(2)}</td><td>${opXG.toFixed(2)}</td><td>${home?best:best.split('–').reverse().join('–')} <span style="color:#888">(you first)</span></td><td>${(myW*100).toFixed(0)} / ${(D*100).toFixed(0)} / ${(myL*100).toFixed(0)}</td><td>${xp.toFixed(2)}</td></tr>`;});
+ document.querySelector('#clubTbl tbody').innerHTML=rows;
+ document.getElementById('clubKpis').innerHTML=
+  `<div class="kpi"><b>${c[1]} pts</b><span><strong>${c[0]}</strong> after GW11 · GF ${c[2]} · GA ${c[3]}</span></div>`+
+  `<div class="kpi"><b>${(c[4]/11).toFixed(2)}</b><span>xG For / match (attack strength ${atk.toFixed(2)}× league)</span></div>`+
+  `<div class="kpi"><b>${(c[5]/11).toFixed(2)}</b><span>xG Against / match (defensive weakness ${defW.toFixed(2)}× league)</span></div>`+
+  `<div class="kpi"><b>${totXGF.toFixed(1)} / ${totXGA.toFixed(1)}</b><span>Projected total xG For / Against, GW12–38</span></div>`+
+  `<div class="kpi"><b>${totXP.toFixed(1)}</b><span>Projected expected points, GW12–38 (Poisson W/D/L)</span></div>`;
+ document.getElementById('clubNote').textContent=`Reading it: ${c[0]} project to about ${(totXGF/27).toFixed(2)} xG for and ${(totXGA/27).toFixed(2)} against per match over the run-in. Expected points are probabilities, not promises — a 60% win chance still loses 4 times in 10. Model frozen at GW11 strengths; Fourier wave and venue factors included; no injury, suspension, transfer or congestion adjustments yet (see Fourier section for what those would need).`;
+ if(clubChart)clubChart.destroy();
+ clubChart=new Chart(document.getElementById('clubChart'),{type:'line',data:{labels:labelsC,datasets:[
+  {label:c[0]+' — predicted xG For',data:xf,borderColor:'#37003c',backgroundColor:'#37003c',borderWidth:3,pointRadius:3,tension:.3},
+  {label:c[0]+' — predicted xG Against',data:xa,borderColor:'#ff2882',backgroundColor:'#ff2882',borderWidth:3,pointRadius:3,tension:.3},
+  {label:'League mean (1.41)',data:labelsC.map(()=>MU),borderColor:'#999',borderDash:[5,5],borderWidth:1.5,pointRadius:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:c[0]+' — weekly predicted xG, GW12–38'}},scales:{y:{title:{display:true,text:'Predicted xG'},suggestedMin:0,suggestedMax:3}}}});
+ try{localStorage.setItem('plxg-club',code)}catch(e){}
+}
+const clubSel=document.getElementById('clubSelect');
+Object.keys(CLUBS).sort((a,b)=>CLUBS[a][0].localeCompare(CLUBS[b][0])).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=CLUBS[k][0];clubSel.appendChild(o)});
+clubSel.addEventListener('change',()=>renderClub(clubSel.value));
+renderClub((()=>{try{return localStorage.getItem('plxg-club')||'ARS'}catch(e){return 'ARS'}})());
+// PWA: service worker + install prompt
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+let deferredPrompt=null; const installBtn=document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.style.display='inline-block'});
+installBtn.addEventListener('click',async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.style.display='none'}});
+// residual chart (actual - Fourier smoothed)
+new Chart(document.getElementById('resid'),{type:'bar',data:{labels:labels.slice(0,11),datasets:[{label:'Residual: actual − Fourier smoothed (xG / team-match)',data:scored.slice(0,11).map((v,i)=>+(v-FOUR_SMOOTH[i]).toFixed(3)),backgroundColor:scored.slice(0,11).map((v,i)=>v-FOUR_SMOOTH[i]>=0?'#ff2882':'#37003c')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:'Fourier residuals GW1–11 — spikes here are questions, not explanations'}},scales:{y:{title:{display:true,text:'Residual xG'}}}}});
+// table
+const tb=document.querySelector('#tbl tbody');
+for(let gw=1;gw<=38;gw++){
+ const tr=document.createElement('tr');
+ if(gw<=11){const a=actual[gw-1];tr.innerHTML=`<td>GW${gw}</td><td>${a[1]}</td><td class="act">● Actual</td><td>${a[2].toFixed(2)}</td><td>${scored[gw-1].toFixed(2)} est.</td><td>${conceded[gw-1].toFixed(2)} est. (= scored)</td><td>${FOUR_SMOOTH[gw-1].toFixed(2)}</td><td>${(scored[gw-1]-FOUR_SMOOTH[gw-1]>=0?'+':'')+(scored[gw-1]-FOUR_SMOOTH[gw-1]).toFixed(2)}</td><td>—</td><td>—</td>`;}
+ else{tr.innerHTML=`<td>GW${gw}</td><td>${projDates[gw-12]}</td><td class="proj">● Projected</td><td>—</td><td>${MU.toFixed(2)}</td><td>${MU.toFixed(2)} (= scored)</td><td>${FOUR_PROJ[gw-12].toFixed(2)}</td><td>—</td><td>${b68l[gw-1].toFixed(2)} – ${b68u[gw-1].toFixed(2)}</td><td>${b95l[gw-1].toFixed(2)} – ${b95u[gw-1].toFixed(2)}</td>`;}
+ tb.appendChild(tr);
+}
+</script>
+</body>
+</html>
