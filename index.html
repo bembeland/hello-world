@@ -72,6 +72,7 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <p>Everything below is <strong id="clubFollowName">the selected club only</strong>. GW1–11: actual vs no-peeking backtest (prior weeks only) — was it right, how far off, what to check. GW12–38: <strong>three prediction types</strong> — W/D/L, Over/Under 2.5, BTTS — from logistic regression + Poisson, bias-corrected. Short tags only; VAR/weather/red-card tags are <em>things to verify</em>, not proven causes.</p>
 <label for="clubSelect" style="font-weight:800;color:var(--pl)">Club:</label>
 <select id="clubSelect" style="font-size:17px;padding:10px 14px;border-radius:10px;border:2px solid var(--pl);margin:8px 0 14px;max-width:100%"></select>
+<p style="font-size:13px;color:#555"><strong>Your criteria applied:</strong> 🏟️ Fortress home (×1.15) only Arsenal, Brighton, Bournemouth, Brentford, Hull — others ×1.00 · cut to ×1.07 when Liverpool/Arsenal visit · ⚔️ derbies: home advantage OFF · 🇪🇺 Europe (UCL: ARS/MCI/MUN/AVL/LIV · UEL: BOU/SUN/CRY · UECL: BHA): −8% away / −4% home in the GW after a European game (+Thu bonus), +2% season-load from GW18, cap −12%. Tags show per row.</p>
 <div id="clubKpis" class="kpis" style="margin:8px 0"></div>
 <div style="height:340px"><canvas id="clubChart"></canvas></div>
 <div id="clubBacktest" class="kpis" style="margin:8px 0"></div>
@@ -176,6 +177,19 @@ const FIX=["NFO-CHE,LEE-COV,MUN-BRE,IPS-AVL,EVE-LIV,BHA-NEW,CRY-HUL,SUN-TOT,FUL-
 const PAST=["ARS3-0COV,HUL2-0MUN,IPS2-1SUN,NFO0-1LEE,EVE2-0CRY,BRE3-0TOT,MCI2-1BOU,BHA4-0AVL,NEW2-2LIV,FUL2-3CHE","CRY1-4MCI,LIV2-2NFO,COV0-1HUL,BOU1-1EVE,TOT0-2NEW,CHE4-3BHA,SUN1-0FUL,LEE1-1BRE,MUN5-2IPS,AVL0-1ARS","IPS0-2LIV,NEW2-2BOU,NFO0-0TOT,FUL2-3CRY,BRE1-1SUN,MCI1-0COV,BHA1-1LEE,HUL0-0AVL,EVE2-2MUN,ARS2-1CHE","BOU2-2BRE,AVL1-2NFO,CHE2-2HUL,CRY2-3IPS,LIV0-0FUL,TOT0-0EVE,SUN0-2ARS,COV0-5BHA,MUN0-1MCI,LEE4-1NEW","BRE3-0CHE,TOT2-3AVL,BHA3-0ARS,EVE1-0IPS,NEW2-1HUL,NFO0-1COV,MCI5-3SUN,LEE0-0CRY,BOU0-1LIV,FUL1-1MUN","ARS2-1LEE,AVL2-2BRE,CHE5-1BOU,IPS2-1FUL,SUN0-2BHA,MUN1-1TOT,CRY3-1NFO,HUL2-2EVE,LIV0-3MCI,COV4-1NEW","EVE0-2CHE,BRE1-2LIV,FUL1-0HUL,MCI3-2IPS,NEW0-1AVL,BOU2-0SUN,BHA5-0CRY,LEE1-1MUN,NFO0-1ARS,TOT3-1COV","IPS1-1NFO,AVL2-1MCI,ARS2-0EVE,COV0-1FUL,CHE0-2TOT,CRY0-2NEW,HUL1-1BRE,LIV2-0BHA,MUN0-3BOU,SUN0-0LEE","CHE2-0MUN,BOU2-0LEE,BRE2-0NFO,COV3-1SUN,HUL2-2IPS,MCI0-1BHA,TOT2-0CRY,AVL1-1FUL,LIV0-1ARS,NEW0-1EVE","EVE3-1COV,LEE1-0TOT,ARS1-0HUL,FUL1-1NEW,NFO3-1MCI,BHA2-0BRE,CRY1-3LIV,IPS1-2BOU,SUN1-0CHE,MUN4-4AVL","MCI1-1FUL,BOU2-0NFO,AVL0-0SUN,CHE1-4LEE,COV3-2CRY,TOT2-0IPS,NEW2-2ARS,HUL2-0BHA,LIV4-0MUN,BRE4-0EVE"];
 function pois(l){const p=[Math.exp(-l)];for(let k=1;k<=10;k++)p.push(p[k-1]*l/k);return p}
 let clubChart=null;
+// --- User criteria: fortress home, derbies, strong-away discount, Europe fatigue ---
+const FORTRESS=new Set(['ARS','BHA','BOU','BRE','HUL']); // only these get a home boost
+const STRONG_AWAY=new Set(['LIV','ARS']); // visiting these cuts the fortress boost
+const DERBIES=[['ARS','TOT'],['ARS','CHE'],['CHE','TOT'],['CHE','FUL'],['BRE','FUL'],['BRE','CHE'],['LIV','EVE'],['MUN','MCI'],['NEW','SUN'],['BHA','CRY'],['LEE','MUN']];
+const isDerby=(a,b)=>DERBIES.some(d=>(d[0]===a&&d[1]===b)||(d[0]===b&&d[1]===a));
+function venueMults(h,a){ // [homeXG mult, awayXG mult, label]
+ if(isDerby(h,a))return[1,1,'Derby · home adv OFF'];
+ if(FORTRESS.has(h)){if(STRONG_AWAY.has(a))return[1.07,0.93,'Fortress · reduced v '+a];return[1.15,0.85,'Fortress home']}
+ return[1,1,'No fortress boost'];}
+const EUROPE={ARS:'UCL',MCI:'UCL',MUN:'UCL',AVL:'UCL',LIV:'UCL',BOU:'UEL',SUN:'UEL',CRY:'UEL',BHA:'UECL'}; // PL, 2026-27 (Sky/Premier League)
+const EURO_AFTER=new Set([4,5,7,8,10,12,15,22,23,26,27,29,30,31,32,34,35]); // PL GW right after a European matchday (league phase + scheduled knockouts)
+function fatigue(team,gw,isAway){if(!EUROPE[team])return 0;let p=0;if(EURO_AFTER.has(gw))p+=isAway?0.08:0.04;if(EUROPE[team]!=='UCL'&&EURO_AFTER.has(gw))p+=0.01;if(gw>=18)p+=0.02;return Math.min(p,0.12)}
+const fatLabel=(team,gw,isAway)=>{const p=fatigue(team,gw,isAway);return p?`Europe fatigue −${(p*100).toFixed(0)}%${isAway?' (away after Europe)':''}`:''};
 // --- Binary logistic regressions: W/D/L (one-vs-rest), Over 2.5, BTTS ---
 function logitTrain(X,y,iters=900,lr=0.08){let w=new Array(X[0].length).fill(0);for(let it=0;it<iters;it++){const g=new Array(w.length).fill(0);X.forEach((x,i)=>{const z=x.reduce((s,v,j)=>s+v*w[j],0),p=1/(1+Math.exp(-z));x.forEach((v,j)=>g[j]+=(p-y[i])*v)});w=w.map((v,j)=>v-lr*g[j]/X.length)}return w}
 const logitP=(w,x)=>1/(1+Math.exp(-x.reduce((s,v,j)=>s+v*w[j],0)));
@@ -183,7 +197,7 @@ const MATCHES=[];
 {const LG2=303/220,cum2={};Object.keys(CLUBS).forEach(k=>cum2[k]={gf:0,ga:0,n:0});
  const pr2=k=>{const cu=cum2[k];return{a:((cu.gf+4*LG2)/(cu.n+4))/LG2,d:((cu.ga+4*LG2)/(cu.n+4))/LG2}};
  const parsedPast=PAST.map(gws=>gws.split(',').map(m=>{const mm=m.match(/^([A-Z]{3})(\d+)-(\d+)([A-Z]{3})$/);return{h:mm[1],hg:+mm[2],ag:+mm[3],a:mm[4]}}));
- parsedPast.forEach(matches=>{matches.forEach(m=>{const ph=pr2(m.h),pa2=pr2(m.a);MATCHES.push({hx:MU*ph.a*pa2.d*1.15,ax:MU*pa2.a*ph.d*0.85,hg:m.hg,ag:m.ag})});
+ parsedPast.forEach((matches,gi)=>{const gw=gi+1;matches.forEach(m=>{const ph=pr2(m.h),pa2=pr2(m.a),vm=venueMults(m.h,m.a);MATCHES.push({hx:MU*ph.a*pa2.d*vm[0]*(1-fatigue(m.h,gw,false)),ax:MU*pa2.a*ph.d*vm[1]*(1-fatigue(m.a,gw,true)),hg:m.hg,ag:m.ag})});
   matches.forEach(m=>{cum2[m.h].gf+=m.hg;cum2[m.h].ga+=m.ag;cum2[m.h].n++;cum2[m.a].gf+=m.ag;cum2[m.a].ga+=m.hg;cum2[m.a].n++});});}
 const teamX=(home,my,op)=>[1,home?1:0,my-op,my+op,my];
 const matchX=(hx,ax)=>[1,hx+ax,Math.abs(hx-ax),hx,ax];
@@ -225,7 +239,8 @@ function renderClub(code){
    parsed.forEach(m=>{if(m.h===code||m.a===code)my=m});
    const home=my.h===code, opp=home?my.a:my.h, gf=home?my.hg:my.ag, ga=home?my.ag:my.hg;
    const me=prior(code), op=prior(opp);
-   const pf=MU*me.a*op.d*(home?1.15:0.85), pa=MU*op.a*me.d*(home?0.85:1.15);
+   const vmB=venueMults(my.h,my.a);
+   const pf=MU*me.a*op.d*(home?vmB[0]:vmB[1])*(1-fatigue(code,gw,!home)), pa=MU*op.a*me.d*(home?vmB[1]:vmB[0])*(1-fatigue(opp,gw,home));
    const predO=outcome(pf,pa), actO=outcome(gf,ga), hit=predO===actO; if(hit)hits++;
    const err=(Math.abs(gf-pf)+Math.abs(ga-pa))/2; maeF+=Math.abs(gf-pf); maeA+=Math.abs(ga-pa); sumPF+=pf; sumAF+=gf; sumPA+=pa; sumAA+=ga;
    if(err>bigErr){bigErr=err;bigMiss=`GW${gw} v ${CLUBS[opp][0]} (actual ${gf}–${ga}, pred ${pf.toFixed(1)}–${pa.toFixed(1)})`}
@@ -240,7 +255,9 @@ function renderClub(code){
  FIX.forEach((gws,i)=>{const gw=12+i; let home=false,opp=null;
    gws.split(',').forEach(m=>{const [h,a]=m.split('-'); if(h===code){home=true;opp=a} if(a===code){home=false;opp=h}});
    const o=CLUBS[opp], oAtk=(o[4]/11)/MU, oDef=(o[5]/11)/MU, wave=FOUR_PROJ[i]/MU;
-   const myXG=MU*atk*corrF*oDef*(home?1.15:0.85)*wave, opXG=MU*oAtk*defW*corrA*(home?0.85:1.15)*wave;
+   const vm=venueMults(home?code:opp,home?opp:code);
+   const myFat=fatigue(code,gw,!home), opFat=fatigue(opp,gw,home);
+   const myXG=MU*atk*corrF*oDef*(home?vm[0]:vm[1])*(1-myFat)*wave, opXG=MU*oAtk*defW*corrA*(home?vm[1]:vm[0])*(1-opFat)*wave;
    const ph=pois(home?myXG:opXG), pa=pois(home?opXG:myXG);
    let W=0,D=0,best='',bp=-1;
    for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){const p=ph[hg]*pa[ag]; if(hg>ag)W+=p; else if(hg===ag)D+=p; if(p>bp){bp=p;best=hg+'–'+ag}}
@@ -248,7 +265,7 @@ function renderClub(code){
    const winP=home?W:aW, loseP=Math.max(0,1-winP-D), xp=3*winP+D;
    const lp=logitProbs(home,myXG,opXG), ov=overProb(home,myXG,opXG), bt=bttsProb(home,myXG,opXG);
    totXP+=xp; totXGF+=myXG; totXGA+=opXG; labelsC.push('GW'+gw); xf.push(+myXG.toFixed(2)); xa.push(+opXG.toFixed(2)); agf.push(null); aga.push(null);
-   rows+=`<tr><td>GW${gw}</td><td>${CLUBS[opp][0]} (${home?'H':'A'})<br><span style="color:#888">${dateMap[gw].replace(' (Projected)','')}</span></td><td class="proj">—</td><td>${myXG.toFixed(2)}–${opXG.toFixed(2)}</td><td><strong>${(lp[0]*100).toFixed(0)} / ${(lp[1]*100).toFixed(0)} / ${(lp[2]*100).toFixed(0)}</strong><br><span style="color:#888">Poisson ${(winP*100).toFixed(0)}/${(D*100).toFixed(0)}/${(loseP*100).toFixed(0)} · xPts ${xp.toFixed(1)}</span></td><td>${(ov*100).toFixed(0)}%</td><td>${(bt*100).toFixed(0)}%</td><td>${home?best:best.split('–').reverse().join('–')}</td><td>—</td><td>Played? tag &amp; refit</td></tr>`;});
+   rows+=`<tr><td>GW${gw}</td><td>${CLUBS[opp][0]} (${home?'H':'A'})<br><span style="color:#888">${dateMap[gw].replace(' (Projected)','')}</span></td><td class="proj">—</td><td>${myXG.toFixed(2)}–${opXG.toFixed(2)}</td><td><strong>${(lp[0]*100).toFixed(0)} / ${(lp[1]*100).toFixed(0)} / ${(lp[2]*100).toFixed(0)}</strong><br><span style="color:#888">Poisson ${(winP*100).toFixed(0)}/${(D*100).toFixed(0)}/${(loseP*100).toFixed(0)} · xPts ${xp.toFixed(1)}</span></td><td>${(ov*100).toFixed(0)}%</td><td>${(bt*100).toFixed(0)}%</td><td>${home?best:best.split('–').reverse().join('–')}</td><td>—</td><td>${[vm[2],fatLabel(code,gw,!home),fatLabel(opp,gw,home)].filter(Boolean).join(' · ')}</td></tr>`;});
  document.querySelector('#clubTbl tbody').innerHTML=rows;
  document.getElementById('clubKpis').innerHTML=
   `<div class="kpi"><b>${c[1]} pts</b><span><strong>${c[0]}</strong> after GW11 · GF ${c[2]} · GA ${c[3]}</span></div>`+
@@ -276,12 +293,12 @@ function renderClub(code){
  try{localStorage.setItem('plxg-club',code)}catch(e){}
  // Liverpool commentary evidence (researched from BBC live text / Guardian / Sky - see sources in section)
  const LIV_EV=[
- ["GW1","Newcastle 2–2 Liverpool · pred 1.20–1.62 (L) · ❌ MISS","Szoboszlai equalises from a 90'+9 penalty Newcastle's manager called 'a really, really soft one'; Liverpool had 27 attempts (BBC live text).","Late penalty / disputed VAR-ref decision; high shot volume, low conversion","A 99th-minute penalty is a lottery event, not team strength. Tag it; don't let it drag the defensive rating."],
- ["GW4","Liverpool 0–0 Fulham · pred 2.52–1.17 (W) · ❌ MISS (biggest)","'Less than 72 hours after the Reds beat Atletico Madrid… lacked the intensity'; three changes made; Muñoz hits the crossbar 22'; both sides miss late chances (BBC/Sky).","Congestion (<72h rest, European midweek), rotation, woodwork","Add a rest-days covariate the calendar already knows. This miss was predictable pre-match — the averages just never looked."],
- ["GW6","Liverpool 0–3 Man City · pred 1.39–1.37 (W) · ❌ MISS","0–0 until Gravenberch's second yellow on 62'; Haaland 65', Doku 68', Cherki 78' — all three goals after the red (BBC/Guardian).","Red card 62' (Liverpool); goals-after-red = 3","Split the match at 62'. Post-red minutes must not update 11v11 team strength at full weight — the model currently learns 'City are 3 goals better' from a 10-men segment."],
- ["GW8","Liverpool 2–0 Brighton · pred 1.08–2.01 (L) · ❌ MISS","Opener is a deflected own goal (Groß 17'); Brighton miss a big chance (Ayari) before it and have 64% possession; Wirtz off with an ankle injury 65' (BBC).","Own goal/deflection, opponent big-chance miss, injury to key creator (Wirtz)","Result flattered the process. Commentary separates 'played well' from 'scored': use chance-quality text, not just the 2–0."],
- ["GW9","Liverpool 0–1 Arsenal · pred 1.03–1.10 (L) · ✅ HIT — but process wrong","Liverpool: 17 attempts, 0 on target; two penalty claims waved away (Isak shirt-pull — 'I don't understand why they didn't call it'), Wirtz free-kick hits the bar (BBC).","VAR/penalty denied ×2, woodwork, zero shots on target despite pressure","An outcome 'hit' can still be a model failure. Train on performance features, not only W/D/L, or lucky hits teach bad lessons."],
- ["GW11","Liverpool 4–0 Man Utd · pred 2.09–0.98 (W) · ✅ HIT, margin wrong","Yoro sent off 8' (VAR-disputed); Szoboszlai 10' and Wirtz 13' score almost immediately; United players: 'the game changed completely after six minutes' (BBC).","Red card 8' (opponent); goals-after-red = 4 (2 within 5 mins)","Same segment rule as GW6, in Liverpool's favour. Without it the model over-credits Liverpool's attack for GW12+ — exactly the kind of false learning that breaks the next prediction."]];
+ ["GW1","Newcastle 2–2 Liverpool · pred 1.41–1.41 (D) · ✅ HIT — via a 99' penalty","Szoboszlai equalises from a 90'+9 penalty Newcastle's manager called 'a really, really soft one'; Liverpool had 27 attempts (BBC live text).","Late penalty / disputed VAR-ref decision; high shot volume, low conversion","A 99th-minute penalty is a lottery event, not team strength. Tag it; don't let it drag the defensive rating."],
+ ["GW4","Liverpool 0–0 Fulham · pred 2.10–1.37 (W) · ❌ MISS (biggest)","'Less than 72 hours after the Reds beat Atletico Madrid… lacked the intensity'; three changes made; Muñoz hits the crossbar 22'; both sides miss late chances (BBC/Sky).","Congestion (<72h rest, European midweek), rotation, woodwork","Add a rest-days covariate the calendar already knows. This miss was predictable pre-match — the averages just never looked."],
+ ["GW6","Liverpool 0–3 Man City · pred 1.21–1.62 (L) · ✅ outcome, wrong process","0–0 until Gravenberch's second yellow on 62'; Haaland 65', Doku 68', Cherki 78' — all three goals after the red (BBC/Guardian).","Red card 62' (Liverpool); goals-after-red = 3","Split the match at 62'. Post-red minutes must not update 11v11 team strength at full weight — the model currently learns 'City are 3 goals better' from a 10-men segment."],
+ ["GW8","Liverpool 2–0 Brighton · pred 0.90–2.16 (L) · ❌ MISS","Opener is a deflected own goal (Groß 17'); Brighton miss a big chance (Ayari) before it and have 64% possession; Wirtz off with an ankle injury 65' (BBC).","Own goal/deflection, opponent big-chance miss, injury to key creator (Wirtz)","Result flattered the process. Commentary separates 'played well' from 'scored': use chance-quality text, not just the 2–0."],
+ ["GW9","Liverpool 0–1 Arsenal · pred 0.90–1.29 (L) · ✅ HIT — but process wrong","Liverpool: 17 attempts, 0 on target; two penalty claims waved away (Isak shirt-pull — 'I don't understand why they didn't call it'), Wirtz free-kick hits the bar (BBC).","VAR/penalty denied ×2, woodwork, zero shots on target despite pressure","An outcome 'hit' can still be a model failure. Train on performance features, not only W/D/L, or lucky hits teach bad lessons."],
+ ["GW11","Liverpool 4–0 Man Utd · pred 1.82–1.15 (W) · ✅ HIT, margin wrong","Yoro sent off 8' (VAR-disputed); Szoboszlai 10' and Wirtz 13' score almost immediately; United players: 'the game changed completely after six minutes' (BBC).","Red card 8' (opponent); goals-after-red = 4 (2 within 5 mins)","Same segment rule as GW6, in Liverpool's favour. Without it the model over-credits Liverpool's attack for GW12+ — exactly the kind of false learning that breaks the next prediction."]];
  const livBox=document.getElementById('livEvidence');
  if(code==='LIV'){livBox.style.display='block';document.querySelector('#livTbl tbody').innerHTML=LIV_EV.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('')}
  else{livBox.style.display='none'}
