@@ -73,6 +73,10 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <label for="clubSelect" style="font-weight:800;color:var(--pl)">Club:</label>
 <select id="clubSelect" style="font-size:17px;padding:10px 14px;border-radius:10px;border:2px solid var(--pl);margin:8px 0 14px;max-width:100%"></select>
 <p style="font-size:13px;color:#555"><strong>Your criteria applied:</strong> 🏟️ Fortress home (×1.15) only Arsenal, Brighton, Bournemouth, Brentford, Hull — others ×1.00 · cut to ×1.07 when Liverpool/Arsenal visit · ⚔️ derbies: home advantage OFF · 🇪🇺 Europe (UCL: ARS/MCI/MUN/AVL/LIV · UEL: BOU/SUN/CRY · UECL: BHA): −8% away / −4% home in the GW after a European game (+Thu bonus), +2% season-load from GW18, cap −12%. Tags show per row.</p>
+<div style="background:#eef7ee;border:1px solid #bfe3bf;border-radius:14px;padding:12px 16px;margin:10px 0;line-height:1.6">
+<button id="refreshBtn" style="background:#00a651;color:#fff;border:0;padding:11px 18px;border-radius:999px;font-weight:900;cursor:pointer;font-size:15px">🔄 Refresh latest team news &amp; re-run predictions</button>
+<span id="refreshStatus" style="font-size:13px;color:#555"> Built-in news snapshot: <strong>26 Nov 2026</strong>. Tapping refresh checks for a newer app version, re-runs all predictions with the player statuses below, and stamps the time. Live sources (open, then toggle any changed player below): <a href="https://www.premierleague.com/en/news/4425344" target="_blank" rel="noopener">Premier League suspensions &amp; 4-yellow risks</a> · <a href="https://www.squawka.com/us/epl-premier-league/premier-league-injuries-and-suspensions/" target="_blank" rel="noopener">Squawka injury/suspension tracker</a> · <a href="https://www.liverpoolfc.com/news/liverpools-injury-list-suspensions-and-availability" target="_blank" rel="noopener">Liverpool FC availability</a> · <a href="https://www.bbc.com/sport/football" target="_blank" rel="noopener">BBC team news</a>. <em>A static app can't scrape these itself (browser security) — so the human taps the link, the model does the maths.</em></span>
+</div>
 <p style="font-size:14px"><strong>⭐ Focus model (detailed, commentary-based):</strong> <span id="focusChips"></span><br><span style="color:#666">Detailed chances/conversion/travel analysis is limited to these six. Other clubs keep the standard model — a standardised model was not working for every team.</span></p>
 <div id="focusPanel" style="display:none;background:#faf5ff;border:1px solid #e5d5f5;border-radius:14px;padding:14px 16px;margin:10px 0;line-height:1.6"></div>
 <div style="background:#fff8e6;border:1px solid #f0d48a;border-radius:14px;padding:14px 16px;margin:10px 0;line-height:1.6">
@@ -87,7 +91,7 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <tr><td>Chelsea (no-Europe control group)</td><td>10</td><td>−0.02</td><td>1.30</td><td>Rest alone isn't winning games — their problem is elsewhere</td></tr>
 </tbody></table>
 <p style="font-size:13px"><strong>Per-team post-Europe split (why one penalty can't fit all):</strong> Brighton <strong>+0.87</strong> after Thursday games (thriving) · Liverpool +0.18 · Man City +0.12 · Arsenal −0.22 · Man Utd −0.20 (and only 0.6 pts/game in those weeks). Next refit: team-specific fatigue coefficients instead of one universal −8%/−4%.</p>
-<p style="font-size:13px"><strong>Verified commentary events (BBC key-events, extracted so far):</strong> GW1 — João Gomes (Aston Villa) red 40' at Brighton (0–4). GW6 — Gravenberch (Liverpool) red 62' v Man City, all 3 City goals after it. GW11 — Yoro (Man Utd) red 8' at Liverpool (goals 10', 13'); Costinha (Hull) sent off before Hull's two stoppage-time goals v Brighton. Full automated extraction for all 56 focus-team matches is the next build — these four already explain two of Liverpool's biggest model errors.</p>
+<p style="font-size:13px"><strong>Verified commentary events (BBC key-events, extracted so far):</strong> GW1 — João Gomes (Aston Villa) red 40' at Brighton (0–4). GW6 — Gravenberch (Liverpool) red 62' v Man City, all 3 City goals after it. GW11 — Yoro (Man Utd) red 8' at Liverpool (goals 10', 13'); Costinha (Brighton) sent off at Hull — Brighton then conceded two stoppage-time goals. Full automated extraction for all 56 focus-team matches is the next build — these four already explain two of Liverpool's biggest model errors.</p>
 </div>
 <div id="clubKpis" class="kpis" style="margin:8px 0"></div>
 <div style="height:340px"><canvas id="clubChart"></canvas></div>
@@ -193,6 +197,20 @@ const FIX=["NFO-CHE,LEE-COV,MUN-BRE,IPS-AVL,EVE-LIV,BHA-NEW,CRY-HUL,SUN-TOT,FUL-
 const PAST=["ARS3-0COV,HUL2-0MUN,IPS2-1SUN,NFO0-1LEE,EVE2-0CRY,BRE3-0TOT,MCI2-1BOU,BHA4-0AVL,NEW2-2LIV,FUL2-3CHE","CRY1-4MCI,LIV2-2NFO,COV0-1HUL,BOU1-1EVE,TOT0-2NEW,CHE4-3BHA,SUN1-0FUL,LEE1-1BRE,MUN5-2IPS,AVL0-1ARS","IPS0-2LIV,NEW2-2BOU,NFO0-0TOT,FUL2-3CRY,BRE1-1SUN,MCI1-0COV,BHA1-1LEE,HUL0-0AVL,EVE2-2MUN,ARS2-1CHE","BOU2-2BRE,AVL1-2NFO,CHE2-2HUL,CRY2-3IPS,LIV0-0FUL,TOT0-0EVE,SUN0-2ARS,COV0-5BHA,MUN0-1MCI,LEE4-1NEW","BRE3-0CHE,TOT2-3AVL,BHA3-0ARS,EVE1-0IPS,NEW2-1HUL,NFO0-1COV,MCI5-3SUN,LEE0-0CRY,BOU0-1LIV,FUL1-1MUN","ARS2-1LEE,AVL2-2BRE,CHE5-1BOU,IPS2-1FUL,SUN0-2BHA,MUN1-1TOT,CRY3-1NFO,HUL2-2EVE,LIV0-3MCI,COV4-1NEW","EVE0-2CHE,BRE1-2LIV,FUL1-0HUL,MCI3-2IPS,NEW0-1AVL,BOU2-0SUN,BHA5-0CRY,LEE1-1MUN,NFO0-1ARS,TOT3-1COV","IPS1-1NFO,AVL2-1MCI,ARS2-0EVE,COV0-1FUL,CHE0-2TOT,CRY0-2NEW,HUL1-1BRE,LIV2-0BHA,MUN0-3BOU,SUN0-0LEE","CHE2-0MUN,BOU2-0LEE,BRE2-0NFO,COV3-1SUN,HUL2-2IPS,MCI0-1BHA,TOT2-0CRY,AVL1-1FUL,LIV0-1ARS,NEW0-1EVE","EVE3-1COV,LEE1-0TOT,ARS1-0HUL,FUL1-1NEW,NFO3-1MCI,BHA2-0BRE,CRY1-3LIV,IPS1-2BOU,SUN1-0CHE,MUN4-4AVL","MCI1-1FUL,BOU2-0NFO,AVL0-0SUN,CHE1-4LEE,COV3-2CRY,TOT2-0IPS,NEW2-2ARS,HUL2-0BHA,LIV4-0MUN,BRE4-0EVE"];
 function pois(l){const p=[Math.exp(-l)];for(let k=1;k<=10;k++)p.push(p[k-1]*l/k);return p}
 let clubChart=null;
+// Chance creators (Premier League / Football365 after GW11) + availability snapshot 26 Nov 2026. impact = % of team creation lost if out.
+const PLAYERS={
+ARS:[['Ødegaard',24,8,'Fit'],['Rice',null,7,'Fit'],['Saka',null,8,'Out'],['Raya (GK)',null,-7,'Doubt']],
+LIV:[['Wirtz',33,12,'Fit'],['Barcola',null,6,'Fit'],['Gakpo',null,5,'Out']],
+MCI:[['Foden',null,8,'Fit'],['Cherki',null,5,'Fit'],['Doku',null,4,'Fit']],
+BHA:[['Gross',31,12,'Fit'],['De Cuyper',25,6,'Fit']],
+CHE:[['Palmer',23,10,'Fit']],
+MUN:[['Fernandes',28,11,'Fit'],['Mbeumo',null,4,'Fit'],['Rashford',null,5,'Fit']]};
+const playerStatus={}; Object.values(PLAYERS).flat().forEach(p=>playerStatus[p[0]]=p[3]);
+function creatorPenalty(team){let pen=0;(PLAYERS[team]||[]).forEach(p=>{if(playerStatus[p[0]]==='Out')pen+=Math.max(p[2],0);if(playerStatus[p[0]]==='Doubt')pen+=Math.max(p[2],0)/2});return Math.min(pen,20)/100}
+function keeperPenalty(team){let pen=0;(PLAYERS[team]||[]).forEach(p=>{if(p[2]<0&&playerStatus[p[0]]==='Out')pen=-p[2];if(p[2]<0&&playerStatus[p[0]]==='Doubt')pen=-p[2]/2});return pen/100}
+// Team-specific post-Europe scoring adjustment (goals, additive): 30% of measured GW1-11 effect, away -0.06 / home +0.02, capped
+const TEAM_EURO_RES={ARS:-0.22,MUN:-0.20,LIV:0.18,MCI:0.12,BHA:0.87};
+function euroAdj(team,gw,isAway){if(!EUROPE[team]||!EURO_AFTER.has(gw))return 0;const base=TEAM_EURO_RES[team]!==undefined?0.3*TEAM_EURO_RES[team]:-0.05;return Math.max(-0.18,Math.min(0.20,base+(isAway?-0.06:0.02)))}
 // --- User criteria: fortress home, derbies, strong-away discount, Europe fatigue ---
 const FORTRESS=new Set(['ARS','BHA','BOU','BRE','HUL']); // only these get a home boost
 const STRONG_AWAY=new Set(['LIV','ARS']); // visiting these cuts the fortress boost
@@ -250,6 +268,7 @@ function renderClub(code){
    if(gf+ga<=1 && pf+pa>3)t.push('Weather / congestion?');
    if(!hit && !t.length)t.push('Check match report');
    return t.length?t.join(' · '):'Normal variance';};
+ let lastResF=0,lastMargin=0;
  PAST.forEach((gws,gi)=>{const gw=gi+1; let my=null;
    const parsed=gws.split(',').map(m=>{const mm=m.match(/^([A-Z]{3})(\d+)-(\d+)([A-Z]{3})$/);return{h:mm[1],hg:+mm[2],ag:+mm[3],a:mm[4]}});
    parsed.forEach(m=>{if(m.h===code||m.a===code)my=m});
@@ -260,6 +279,7 @@ function renderClub(code){
    const predO=outcome(pf,pa), actO=outcome(gf,ga), hit=predO===actO; if(hit)hits++;
    const err=(Math.abs(gf-pf)+Math.abs(ga-pa))/2; maeF+=Math.abs(gf-pf); maeA+=Math.abs(ga-pa); sumPF+=pf; sumAF+=gf; sumPA+=pa; sumAA+=ga;
    if(err>bigErr){bigErr=err;bigMiss=`GW${gw} v ${CLUBS[opp][0]} (actual ${gf}–${ga}, pred ${pf.toFixed(1)}–${pa.toFixed(1)})`}
+   if(gw===11){lastResF=gf-pf;lastMargin=gf-ga}
    labelsC.push('GW'+gw); xf.push(+pf.toFixed(2)); xa.push(+pa.toFixed(2)); agf.push(gf); aga.push(ga);
    rows+=`<tr><td>GW${gw}</td><td>${CLUBS[opp][0]} (${home?'H':'A'})<br><span style="color:#888">${dateMap[gw]}</span></td><td class="act">${gf}–${ga} ${actO}</td><td>${pf.toFixed(2)}–${pa.toFixed(2)}</td><td>Pred: ${predO}</td><td>${gf+ga>2?'Over ✓':''}${''}</td><td>${gf>0&&ga>0?'BTTS ✓':''}</td><td>${Math.round(pf)}–${Math.round(pa)}</td><td>${hit?'✅':'❌'} err ${err.toFixed(1)}</td><td>${tags(gf,ga,pf,pa,hit)}</td></tr>`;
    parsed.forEach(m=>{cum[m.h].gf+=m.hg;cum[m.h].ga+=m.ag;cum[m.h].n++;cum[m.a].gf+=m.ag;cum[m.a].ga+=m.hg;cum[m.a].n++});});
@@ -273,7 +293,11 @@ function renderClub(code){
    const o=CLUBS[opp], oAtk=(o[4]/11)/MU, oDef=(o[5]/11)/MU, wave=FOUR_PROJ[i]/MU;
    const vm=venueMults(home?code:opp,home?opp:code);
    const myFat=fatigue(code,gw,!home), opFat=fatigue(opp,gw,home);
-   const myXG=MU*atk*corrF*oDef*(home?vm[0]:vm[1])*(1-myFat)*wave, opXG=MU*oAtk*defW*corrA*(home?vm[1]:vm[0])*(1-opFat)*wave;
+   let myXG=MU*atk*corrF*oDef*(home?vm[0]:vm[1])*(1-myFat)*wave, opXG=MU*oAtk*defW*corrA*(home?vm[1]:vm[0])*(1-opFat)*wave;
+   const eA=euroAdj(code,gw,!home), eB=euroAdj(opp,gw,home); myXG=Math.max(0.15,myXG+eA); opXG=Math.max(0.15,opXG+eB);
+   let bounce=0; if(gw===12){bounce=(lastMargin<=-3?0.41:lastMargin>=3?-0.12:0)+Math.max(-0.25,Math.min(0.30,-0.35*lastResF)); myXG=Math.max(0.15,myXG+bounce)}
+   const cPen=creatorPenalty(code), oPen=creatorPenalty(opp), kPen=keeperPenalty(code), okPen=keeperPenalty(opp);
+   myXG*= (1-cPen); opXG*= (1-oPen); opXG*= (1+kPen); myXG*= (1+okPen);
    const ph=pois(home?myXG:opXG), pa=pois(home?opXG:myXG);
    let W=0,D=0,best='',bp=-1;
    for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){const p=ph[hg]*pa[ag]; if(hg>ag)W+=p; else if(hg===ag)D+=p; if(p>bp){bp=p;best=hg+'–'+ag}}
@@ -281,7 +305,7 @@ function renderClub(code){
    const winP=home?W:aW, loseP=Math.max(0,1-winP-D), xp=3*winP+D;
    const lp=logitProbs(home,myXG,opXG), ov=overProb(home,myXG,opXG), bt=bttsProb(home,myXG,opXG);
    totXP+=xp; totXGF+=myXG; totXGA+=opXG; labelsC.push('GW'+gw); xf.push(+myXG.toFixed(2)); xa.push(+opXG.toFixed(2)); agf.push(null); aga.push(null);
-   rows+=`<tr><td>GW${gw}</td><td>${CLUBS[opp][0]} (${home?'H':'A'})<br><span style="color:#888">${dateMap[gw].replace(' (Projected)','')}</span></td><td class="proj">—</td><td>${myXG.toFixed(2)}–${opXG.toFixed(2)}</td><td><strong>${(lp[0]*100).toFixed(0)} / ${(lp[1]*100).toFixed(0)} / ${(lp[2]*100).toFixed(0)}</strong><br><span style="color:#888">Poisson ${(winP*100).toFixed(0)}/${(D*100).toFixed(0)}/${(loseP*100).toFixed(0)} · xPts ${xp.toFixed(1)}</span></td><td>${(ov*100).toFixed(0)}%</td><td>${(bt*100).toFixed(0)}%</td><td>${home?best:best.split('–').reverse().join('–')}</td><td>—</td><td>${[vm[2],fatLabel(code,gw,!home),fatLabel(opp,gw,home)].filter(Boolean).join(' · ')}</td></tr>`;});
+   rows+=`<tr><td>GW${gw}</td><td>${CLUBS[opp][0]} (${home?'H':'A'})<br><span style="color:#888">${dateMap[gw].replace(' (Projected)','')}</span></td><td class="proj">—</td><td>${myXG.toFixed(2)}–${opXG.toFixed(2)}</td><td><strong>${(lp[0]*100).toFixed(0)} / ${(lp[1]*100).toFixed(0)} / ${(lp[2]*100).toFixed(0)}</strong><br><span style="color:#888">Poisson ${(winP*100).toFixed(0)}/${(D*100).toFixed(0)}/${(loseP*100).toFixed(0)} · xPts ${xp.toFixed(1)}</span></td><td>${(ov*100).toFixed(0)}%</td><td>${(bt*100).toFixed(0)}%</td><td>${home?best:best.split('–').reverse().join('–')}</td><td>—</td><td>${[vm[2],eA?`Team-Europe ${eA>0?'+':''}${eA.toFixed(2)}`:'',gw===12&&bounce?`Bounce/form ${bounce>0?'+':''}${bounce.toFixed(2)} (from GW11)`:'',cPen?`Creators out −${(cPen*100).toFixed(0)}%`:'',kPen?`Your GK doubt/out: opp +${(kPen*100).toFixed(0)}%`:''].filter(Boolean).join(' · ')||'—'}</td></tr>`;});
  document.querySelector('#clubTbl tbody').innerHTML=rows;
  document.getElementById('clubKpis').innerHTML=
   `<div class="kpi"><b>${c[1]} pts</b><span><strong>${c[0]}</strong> after GW11 · GF ${c[2]} · GA ${c[3]}</span></div>`+
@@ -320,7 +344,9 @@ function renderClub(code){
  if(FOCUS.includes(code)){const n=FOCUS_NOTES[code],conv=c[2]/c[4],created=(c[4]/11).toFixed(2);
   const convTxt=conv>=1.25?'🔥 Running very hot — expect finishing regression unless chance quality rises':conv>=1.05?'Scoring above chance quality — mild regression risk':conv>=0.9?'Converting at par — sustainable':'❄️ Under-converting — upside if finishing normalises (check finisher injuries/form)';
   fp.style.display='block';
+  const creatorRows=(PLAYERS[code]||[]).map(p=>`<label style="display:inline-block;margin:3px 8px 3px 0;font-size:13px">${p[0]}${p[1]?` (${p[1]} chances)`:' '} <select data-player="${p[0]}" class="playerSel"><option ${playerStatus[p[0]]==='Fit'?'selected':''}>Fit</option><option ${playerStatus[p[0]]==='Doubt'?'selected':''}>Doubt</option><option ${playerStatus[p[0]]==='Out'?'selected':''}>Out</option></select></label>`).join('');
   fp.innerHTML=`<strong>⭐ ${c[0]} — focus detail</strong><br>`+
+  `• <strong>Chance creators (frequency):</strong> ${(PLAYERS[code]||[]).map(p=>p[0]+(p[1]?` — ${p[1]} chances created`:'')).join(' · ')||'—'} <span style="color:#888">(Premier League/Football365, after GW11. Wirtz's 33 is the league's most — 10 in GW11 alone.)</span><br>`+creatorRows+`<br>`+
   `• <strong>Chances created:</strong> ${created} xG/match (${(c[4]).toFixed(1)} xG in 11) · <strong>Chances conceded:</strong> ${(c[5]/11).toFixed(2)} xGA/match<br>`+
   `• <strong>Conversion:</strong> ${c[2]} goals from ${c[4].toFixed(1)} xG = <strong>${conv.toFixed(2)}×</strong> — ${convTxt}<br>`+
   `• <strong>Europe:</strong> ${n.eur}. ${n.travel}.<br>`+
@@ -341,6 +367,13 @@ function renderClub(code){
 const clubSel=document.getElementById('clubSelect');
 Object.keys(CLUBS).sort((a,b)=>CLUBS[a][0].localeCompare(CLUBS[b][0])).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=CLUBS[k][0];clubSel.appendChild(o)});
 clubSel.addEventListener('change',()=>renderClub(clubSel.value));
+document.addEventListener('change',e=>{if(e.target.classList&&e.target.classList.contains('playerSel')){playerStatus[e.target.dataset.player]=e.target.value;renderClub(document.getElementById('clubSelect').value)}});
+const refreshBtn=document.getElementById('refreshBtn');
+if(refreshBtn)refreshBtn.addEventListener('click',async()=>{
+ const st=document.getElementById('refreshStatus'); const t=new Date().toLocaleString('en-CA',{timeZone:'America/Toronto',hour:'numeric',minute:'2-digit',day:'numeric',month:'short'});
+ st.innerHTML=` Checking for a newer app version & re-running… <strong>Last refreshed: ${t} (America/Toronto)</strong>. News snapshot built in: 26 Nov 2026 — open the source links above, toggle any changed player in the focus panel, and predictions update instantly. Latest verified: Yoro's red card v Liverpool <strong>rescinded on appeal</strong> (available for Man Utd); Costinha (Brighton) suspended GW12; Saka & Zubimendi out, Raya doubt (Arsenal); Gakpo out, Gravenberch & Munoz doubts (Liverpool); Mac Allister, Barcola, Gross, Maguire on 4 yellows — one booking from a ban.`;
+ try{const reg=await navigator.serviceWorker.getRegistration(); if(reg)await reg.update()}catch(e){}
+ renderClub(document.getElementById('clubSelect').value);});
 const chips=document.getElementById('focusChips');
 ['LIV','ARS','MCI','BHA','CHE','MUN'].forEach(k=>{const b=document.createElement('button');b.textContent=CLUBS[k][0];b.style.cssText='margin:2px;padding:7px 11px;border-radius:999px;border:2px solid #37003c;background:#fff;cursor:pointer;font-weight:700';b.onclick=()=>renderClub(k);chips.appendChild(b)});
 renderClub((()=>{const q=new URLSearchParams(location.search).get('club'); if(q&&CLUBS[q.toUpperCase()])return q.toUpperCase(); try{return localStorage.getItem('plxg-club')||'ARS'}catch(e){return 'ARS'}})());
