@@ -73,6 +73,8 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <label for="clubSelect" style="font-weight:800;color:var(--pl)">Club:</label>
 <select id="clubSelect" style="font-size:17px;padding:10px 14px;border-radius:10px;border:2px solid var(--pl);margin:8px 0 14px;max-width:100%"></select>
 <p style="font-size:13px;color:#555"><strong>Your criteria applied:</strong> 🏟️ Fortress home (×1.15) only Arsenal, Brighton, Bournemouth, Brentford, Hull — others ×1.00 · cut to ×1.07 when Liverpool/Arsenal visit · ⚔️ derbies: home advantage OFF · 🇪🇺 Europe (UCL: ARS/MCI/MUN/AVL/LIV · UEL: BOU/SUN/CRY · UECL: BHA): −8% away / −4% home in the GW after a European game (+Thu bonus), +2% season-load from GW18, cap −12%. Tags show per row.</p>
+<p style="font-size:14px"><strong>⭐ Focus model (detailed, commentary-based):</strong> <span id="focusChips"></span><br><span style="color:#666">Detailed chances/conversion/travel analysis is limited to these six. Other clubs keep the standard model — a standardised model was not working for every team.</span></p>
+<div id="focusPanel" style="display:none;background:#faf5ff;border:1px solid #e5d5f5;border-radius:14px;padding:14px 16px;margin:10px 0;line-height:1.6"></div>
 <div id="clubKpis" class="kpis" style="margin:8px 0"></div>
 <div style="height:340px"><canvas id="clubChart"></canvas></div>
 <div id="clubBacktest" class="kpis" style="margin:8px 0"></div>
@@ -291,6 +293,25 @@ function renderClub(code){
   {type:'line',label:c[0]+' — predicted xG Against',data:xa,borderColor:'#04a5c0',backgroundColor:'#04a5c0',borderWidth:3,pointRadius:2,tension:.3}]},
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:c[0]+' — GW1–38: actual goals (bars) vs predicted xG (lines)'}},scales:{y:{title:{display:true,text:'Goals / predicted xG'},suggestedMin:0,suggestedMax:5}}}});
  try{localStorage.setItem('plxg-club',code)}catch(e){}
+ // --- Focus-six detail: chances created, conversion, Europe travel, next-game prep (commentary-researched) ---
+ const FOCUS=['LIV','ARS','MCI','BHA','CHE','MUN'];
+ const FOCUS_NOTES={
+ ARS:{eur:'UCL',travel:'Away trips already: Napoli, Bayern Munich, Slavia Prague',next:'GW12: Man City (H, Sun) — Dortmund at home Tue 24 Nov, no travel, one more rest day than City',prep:'Prep edge: slight + (home Europe, extra day)'},
+ MCI:{eur:'UCL',travel:'Barcelona away 8 Dec & Lens away 20 Jan ahead',next:'GW12: Arsenal (A, Sun) — Napoli at home Wed 25 Nov, one day less rest, then travel to London',prep:'Prep edge: slight − (shorter week than Arsenal)'},
+ BHA:{eur:'UECL (Thu)',travel:'Jablonec (Czechia) 22 Oct, Getafe (Spain) 5 Nov, Panathinaikos (Athens) 17 Dec',next:'GW12: Newcastle (A, Sun) — Craiova at home Thu 26 Nov (won 4–0), then the long trip north',prep:'Prep edge: − (Thu game + long away travel)'},
+ CHE:{eur:'No Europe',travel:'No European travel — full training weeks at Cobham (Alonso: “seven days to prepare”)',next:'GW12: Nottm Forest (A, Fri) — freshest squad in the six, but 26 players already used and 5W–1D–5L despite the rest',prep:'Prep edge: + on rest, ✗ not yet converting it into results'},
+ MUN:{eur:'UCL',travel:'Sporting away (Lisbon) Wed 25 Nov this week',next:'GW12: Brentford (H, Sat) — shortest turnaround of the six: Lisbon Wed night → home Sat, ~2,500 km round trip',prep:'Prep edge: −− (shortest rest + travel, even at home)'},
+ LIV:{eur:'UCL',travel:'Club Brugge away Wed 25 Nov (won 3–0); Istanbul (Fenerbahce loss) earlier',next:'GW12: Everton (A, derby, Sun 12:00) — Brugge Wed → derby Sun noon; Gakpo (soleus) & Gravenberch (pain) out per BBC/team news',prep:'Prep edge: −− (travel + derby + key injuries)'}};
+ const fp=document.getElementById('focusPanel');
+ if(FOCUS.includes(code)){const n=FOCUS_NOTES[code],conv=c[2]/c[4],created=(c[4]/11).toFixed(2);
+  const convTxt=conv>=1.25?'🔥 Running very hot — expect finishing regression unless chance quality rises':conv>=1.05?'Scoring above chance quality — mild regression risk':conv>=0.9?'Converting at par — sustainable':'❄️ Under-converting — upside if finishing normalises (check finisher injuries/form)';
+  fp.style.display='block';
+  fp.innerHTML=`<strong>⭐ ${c[0]} — focus detail</strong><br>`+
+  `• <strong>Chances created:</strong> ${created} xG/match (${(c[4]).toFixed(1)} xG in 11) · <strong>Chances conceded:</strong> ${(c[5]/11).toFixed(2)} xGA/match<br>`+
+  `• <strong>Conversion:</strong> ${c[2]} goals from ${c[4].toFixed(1)} xG = <strong>${conv.toFixed(2)}×</strong> — ${convTxt}<br>`+
+  `• <strong>Europe:</strong> ${n.eur}. ${n.travel}.<br>`+
+  `• <strong>Next game prep:</strong> ${n.next}.<br>• <strong>${n.prep}</strong> <span style="color:#888">(Europe-fatigue % already applied in the table below; this panel explains it, and adds injuries/form the numbers can't see.)</span>`;}
+ else{fp.style.display='none'}
  // Liverpool commentary evidence (researched from BBC live text / Guardian / Sky - see sources in section)
  const LIV_EV=[
  ["GW1","Newcastle 2–2 Liverpool · pred 1.41–1.41 (D) · ✅ HIT — via a 99' penalty","Szoboszlai equalises from a 90'+9 penalty Newcastle's manager called 'a really, really soft one'; Liverpool had 27 attempts (BBC live text).","Late penalty / disputed VAR-ref decision; high shot volume, low conversion","A 99th-minute penalty is a lottery event, not team strength. Tag it; don't let it drag the defensive rating."],
@@ -306,6 +327,8 @@ function renderClub(code){
 const clubSel=document.getElementById('clubSelect');
 Object.keys(CLUBS).sort((a,b)=>CLUBS[a][0].localeCompare(CLUBS[b][0])).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=CLUBS[k][0];clubSel.appendChild(o)});
 clubSel.addEventListener('change',()=>renderClub(clubSel.value));
+const chips=document.getElementById('focusChips');
+['LIV','ARS','MCI','BHA','CHE','MUN'].forEach(k=>{const b=document.createElement('button');b.textContent=CLUBS[k][0];b.style.cssText='margin:2px;padding:7px 11px;border-radius:999px;border:2px solid #37003c;background:#fff;cursor:pointer;font-weight:700';b.onclick=()=>renderClub(k);chips.appendChild(b)});
 renderClub((()=>{const q=new URLSearchParams(location.search).get('club'); if(q&&CLUBS[q.toUpperCase()])return q.toUpperCase(); try{return localStorage.getItem('plxg-club')||'ARS'}catch(e){return 'ARS'}})());
 // PWA: service worker + install prompt
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
