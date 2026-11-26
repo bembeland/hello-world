@@ -81,13 +81,14 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 </section>
 
 <section class="card" id="clubSection">
-<h2>⚽ Club filter — weekly predictions (GW12–38)</h2>
-<p>Pick a club. Its <strong>attack strength</strong> = its Opta xG For per match ÷ league mean (1.41); its <strong>defensive weakness</strong> = its xG Against per match ÷ league mean. A weekly prediction is then: <code>predicted xG = 1.41 × attack(you) × defensive-weakness(opponent) × venue (home 1.15 / away 0.85) × Fourier league wave for that GW</code>. Win/draw/loss chances and the most likely score come from independent Poisson distributions on the two predicted xGs. Fixtures: published 2026–27 calendar (NBC/Premier League, subject to TV moves). Strengths are frozen at GW11 — as real weeks are played, a live version would refit them weekly.</p>
+<h2>⚽ Club filter — this club, GW1–38: results, backtest &amp; predictions</h2>
+<p>Everything below this selector is <strong id="clubFollowName">the selected club only</strong> — not league averages. <strong>GW1–11:</strong> its actual result, plus what the model would have predicted <em>before</em> that match using only earlier gameweeks (expanding window, goals-based strengths; GW1 uses the league prior — no peeking at the future). That is the backtest: did it call the outcome, and by how much was it off? <strong>GW12–38:</strong> predictions from GW11 Opta strengths (<code>1.41 × attack × opponent defensive-weakness × venue × Fourier wave</code>), <em>corrected</em> by the club's backtest bias (shrunk 50% toward no-correction, capped ±15–18%). Win/draw/loss and most-likely score via Poisson. The “Why might it be off?” column is an <strong>investigation tag, not a confirmed cause</strong> — VAR, weather, red cards and injuries cannot be read off a scoreline; each tag says exactly what to check in the match report / weather record. Fixtures &amp; scores: FBref / NBC / Premier League.</p>
 <label for="clubSelect" style="font-weight:800;color:var(--pl)">Club:</label>
 <select id="clubSelect" style="font-size:17px;padding:10px 14px;border-radius:10px;border:2px solid var(--pl);margin:8px 0 14px;max-width:100%"></select>
 <div id="clubKpis" class="kpis" style="margin:8px 0"></div>
 <div style="height:340px"><canvas id="clubChart"></canvas></div>
-<div class="scroll" style="margin-top:16px"><table id="clubTbl"><thead><tr><th>GW</th><th>Date</th><th>Fixture</th><th>Venue</th><th>Pred. xG For</th><th>Pred. xG Against</th><th>Most likely score</th><th>W / D / L %</th><th>Expected pts</th></tr></thead><tbody></tbody></table></div>
+<div id="clubBacktest" class="kpis" style="margin:8px 0"></div>
+<div class="scroll" style="margin-top:16px"><table id="clubTbl"><thead><tr><th>GW</th><th>Date</th><th>Fixture (club in bold context)</th><th>Venue</th><th>Actual score / result</th><th>Pred. xG For – Against</th><th>Predicted outcome</th><th>Outcome correct?</th><th>Error (goals vs pred)</th><th>Why might it be off? (investigate)</th><th>W / D / L % · xPts</th></tr></thead><tbody></tbody></table></div>
 <p class="note" id="clubNote"></p>
 </section>
 
@@ -120,6 +121,7 @@ a{color:#9b005d;font-weight:700}.foot{padding:28px 22px 44px;color:#555;line-hei
 <p><strong>Actual goals (exact):</strong> every GW1–11 scoreline was counted from FBref’s 2026–27 Premier League Scores &amp; Fixtures (110 matches, 303 goals). Per-GW goals/match: GW1 3.00, GW2 3.20, GW3 2.30, GW4 2.90, GW5 2.70, GW6 3.60, GW7 2.60, GW8 1.90, GW9 2.10, GW10 3.00, GW11 3.00.</p>
 <p><strong>From goals to xG (transparent estimate, never silent invention):</strong> free per-gameweek Opta xG is not published as a clean series — FBref lost its Opta advanced feed in Jan 2026 and Understat has been offline since 2 Nov 2026 (see sources). So GW xG is estimated as <code>GW goals ÷ 20 × (season Opta xG ÷ season goals)</code>, where season Opta xG = <strong>310.69</strong> (sum of all 20 clubs’ xG For in Squawka’s Opta table after GW11; the xG Against column sums to the identical 310.69, a good internal check) and season goals = 303. Calibration factor = 1.025. Cross-checks: this gives GW11 = 3.08 xG/match vs Squawka’s published GW11 Opta match values summing to 3.26/match (−5.8%); a different model (prematchstats) puts the season at 2.93 xG/match and xgstat’s GW1 at 3.43/match — xG models differ, which is exactly why the estimate is labelled <em>est.</em> everywhere.</p>
 <p><strong>Projection (GW12–38):</strong> fit N(μ, σ) to the 11 GW-average xG values (μ = 1.412, sample σ = 0.257). Projected centre is flat at μ ( fitted slope −0.016/GW is negligible). Forecast σ grows with horizon h gameweeks ahead as <code>σ·√(1 + h/11)</code>, so the 68% (±1σ) and 95% (±1.96σ) bands widen — by GW38 the 95% band is roughly 0.48–2.35. Dates for GW12–38 are the published fixture-calendar gameweek start dates (subject to change for TV).</p>
+<p><strong>Club backtest &amp; learning loop:</strong> GW1–11 club predictions in the club table are generated match-by-match with an expanding window — strengths for GW<em>k</em> use only goals for/against from GW1…<em>k</em>−1 (GW1 = league prior), strengths based on goals per team-match (league 1.377) with a 4-match league-mean prior blended in so 1-game samples cannot explode, same venue factors. Reported per club: outcome hits /11, mean absolute error for goals scored and conceded, biggest miss. The future (GW12–38) model then applies a learning correction: (actual ÷ predicted goals in the backtest), shrunk 50% toward 1 and capped to [0.85, 1.18], separately for scoring (×corrF) and conceding (×corrA). “Why might it be off?” tags are rule-based investigation prompts (finishing above/below prediction ≥1.2 goals, conceded above/below ≥1.2, high/low-event games, outcome misses) — they are <em>not</em> confirmed VAR/weather/red-card/injury causes; confirming any of them requires the match-level event and weather data listed in the Fourier section, which is not yet joined. As GW12+ are played, the honest workflow is: add the result, read its tag, verify or reject the tag from the match report, then refit — corrections change in the open, never silently.</p>
 <p><strong>Fourier layer:</strong> (i) in-sample denoising = DFT low-pass, keeping rFFT bins k = 0,1,2 of the 11-point GW series (numpy <code>rfft/irfft</code>, zeroing bins ≥3), R² = 0.65, residuals listed in the table; (ii) forward wave = harmonic regression on periods 38 &amp; 19 GW with ridge penalty λ = 5 on the harmonic coefficients (intercept unpenalised), giving GW12–38 values in the table (range 1.37–1.50). The unregularised version of (ii) was computed, produced a nonsensical 2→35 xG extrapolation, and was discarded — reported here so the choice is auditable. Fourier terms capture only <em>smooth, periodic</em> structure; congestion from cup/European fixtures, red cards, injuries and weather are not periodic and enter only as match-level covariates in the residual analysis described in the Fourier section, which requires event data not in the league-wide series.</p>
 <p><strong>Sources:</strong></p>
 <ul>
@@ -184,37 +186,78 @@ const CLUBS={
 ARS:["Arsenal",28,17,7,16.61,10.71],AVL:["Aston Villa",14,14,17,14.41,18.33],BOU:["Bournemouth",18,18,14,18.37,11.88],BRE:["Brentford",17,20,11,16.17,14.88],BHA:["Brighton & Hove Albion",22,26,9,20.56,14.78],CHE:["Chelsea",16,20,20,13.74,17.30],COV:["Coventry City",12,13,21,11.16,16.65],CRY:["Crystal Palace",7,12,27,15.58,22.34],EVE:["Everton",16,12,14,14.09,16.07],FUL:["Fulham",11,11,13,14.52,15.02],HUL:["Hull City",14,13,11,11.01,16.78],IPS:["Ipswich Town",11,15,22,12.08,19.28],LEE:["Leeds United",17,14,9,16.39,12.73],LIV:["Liverpool",21,18,10,18.58,13.69],MCI:["Manchester City",22,22,14,19.66,11.75],MUN:["Manchester United",8,14,23,17.04,19.75],NEW:["Newcastle United",13,15,18,13.11,17.73],NFO:["Nottingham Forest",9,9,15,16.91,12.88],SUN:["Sunderland",9,8,17,15.25,15.11],TOT:["Tottenham Hotspur",15,12,11,15.45,13.03]};
 // GW12-38 fixtures, HOME-AWAY per match (NBC / Premier League published calendar)
 const FIX=["NFO-CHE,LEE-COV,MUN-BRE,IPS-AVL,EVE-LIV,BHA-NEW,CRY-HUL,SUN-TOT,FUL-BOU,ARS-MCI","COV-IPS,CHE-CRY,HUL-NFO,LIV-SUN,MCI-LEE,BOU-BHA,AVL-EVE,BRE-ARS,NEW-MUN,TOT-FUL","CHE-LIV,AVL-CRY,BOU-HUL,LEE-IPS,MUN-COV,NFO-BHA,BRE-MCI,EVE-FUL,NEW-SUN,TOT-ARS","FUL-BRE,IPS-NEW,LIV-LEE,MCI-CHE,ARS-BOU,BHA-EVE,SUN-NFO,COV-AVL,CRY-MUN,HUL-TOT","BRE-NEW,BOU-COV,LEE-FUL,MCI-HUL,NFO-EVE,LIV-TOT,BHA-IPS,SUN-CRY,ARS-MUN,CHE-AVL","AVL-LEE,EVE-SUN,FUL-BHA,IPS-BRE,TOT-BOU,HUL-LIV,NEW-MCI,COV-CHE,MUN-NFO,CRY-ARS","HUL-LEE,TOT-BHA,EVE-MCI,COV-BRE,CRY-BOU,FUL-ARS,MUN-SUN,NEW-NFO,AVL-LIV,IPS-CHE","LEE-EVE,BHA-MUN,ARS-IPS,BRE-CRY,LIV-COV,NFO-FUL,SUN-HUL,BOU-AVL,CHE-NEW,MCI-TOT","ARS-BRE,BHA-BOU,EVE-AVL,NFO-HUL,SUN-LIV,CRY-CHE,FUL-TOT,IPS-COV,LEE-MCI,MUN-NEW","BOU-IPS,AVL-MUN,BRE-BHA,CHE-SUN,COV-EVE,HUL-ARS,LIV-CRY,MCI-NFO,NEW-FUL,TOT-LEE","ARS-NEW,BHA-MCI,CRY-TOT,EVE-BRE,FUL-AVL,IPS-HUL,LEE-CHE,MUN-LIV,NFO-BOU,SUN-COV","BOU-FUL,AVL-IPS,BRE-MUN,CHE-NFO,COV-LEE,HUL-CRY,LIV-EVE,MCI-ARS,NEW-BHA,TOT-SUN","ARS-LIV,BHA-HUL,CRY-COV,EVE-NEW,FUL-MCI,IPS-TOT,LEE-BOU,MUN-CHE,NFO-BRE,SUN-AVL","AVL-BOU,COV-LIV,CRY-BRE,EVE-LEE,FUL-NFO,HUL-SUN,IPS-ARS,MUN-BHA,NEW-CHE,TOT-MCI","BOU-CRY,ARS-FUL,BRE-COV,BHA-TOT,CHE-IPS,LEE-AVL,LIV-HUL,MCI-NEW,NFO-MUN,SUN-EVE","AVL-CHE,COV-BOU,CRY-SUN,EVE-NFO,FUL-LEE,HUL-MCI,IPS-BHA,MUN-ARS,NEW-BRE,TOT-LIV","BOU-TOT,ARS-CRY,BRE-IPS,BHA-FUL,CHE-COV,LEE-HUL,LIV-AVL,MCI-EVE,NFO-NEW,SUN-MUN","BOU-NEW,AVL-HUL,CHE-ARS,COV-MCI,CRY-FUL,LEE-BHA,LIV-IPS,MUN-EVE,SUN-BRE,TOT-NFO","ARS-SUN,BRE-BOU,BHA-COV,EVE-TOT,FUL-LIV,HUL-CHE,IPS-CRY,MCI-MUN,NEW-LEE,NFO-AVL","BOU-MCI,AVL-BHA,CHE-FUL,COV-ARS,CRY-EVE,LEE-NFO,LIV-NEW,MUN-HUL,SUN-IPS,TOT-BRE","ARS-AVL,BRE-LEE,BHA-CHE,EVE-BOU,FUL-SUN,HUL-COV,IPS-MUN,MCI-CRY,NEW-TOT,NFO-LIV","BOU-ARS,AVL-COV,BRE-FUL,CHE-MCI,EVE-BHA,LEE-LIV,MUN-CRY,NEW-IPS,NFO-SUN,TOT-HUL","ARS-TOT,BHA-NFO,COV-MUN,CRY-AVL,FUL-EVE,HUL-BOU,IPS-LEE,LIV-CHE,MCI-BRE,SUN-NEW","BOU-MUN,BRE-AVL,BHA-SUN,EVE-HUL,FUL-IPS,LEE-ARS,MCI-LIV,NEW-COV,NFO-CRY,TOT-CHE","ARS-NFO,AVL-NEW,CHE-EVE,COV-TOT,CRY-BHA,HUL-FUL,IPS-MCI,LIV-BRE,MUN-LEE,SUN-BOU","BOU-CHE,BRE-HUL,BHA-LIV,EVE-ARS,FUL-COV,LEE-SUN,MCI-AVL,NEW-CRY,NFO-IPS,TOT-MUN","ARS-BHA,AVL-TOT,CHE-BRE,COV-NFO,CRY-LEE,HUL-NEW,IPS-EVE,LIV-BOU,MUN-FUL,SUN-MCI"];
+// GW1-11 actuals, encoded HOME<hg>-<ag>AWAY (FBref scorelines)
+const PAST=["ARS3-0COV,HUL2-0MUN,IPS2-1SUN,NFO0-1LEE,EVE2-0CRY,BRE3-0TOT,MCI2-1BOU,BHA4-0AVL,NEW2-2LIV,FUL2-3CHE","CRY1-4MCI,LIV2-2NFO,COV0-1HUL,BOU1-1EVE,TOT0-2NEW,CHE4-3BHA,SUN1-0FUL,LEE1-1BRE,MUN5-2IPS,AVL0-1ARS","IPS0-2LIV,NEW2-2BOU,NFO0-0TOT,FUL2-3CRY,BRE1-1SUN,MCI1-0COV,BHA1-1LEE,HUL0-0AVL,EVE2-2MUN,ARS2-1CHE","BOU2-2BRE,AVL1-2NFO,CHE2-2HUL,CRY2-3IPS,LIV0-0FUL,TOT0-0EVE,SUN0-2ARS,COV0-5BHA,MUN0-1MCI,LEE4-1NEW","BRE3-0CHE,TOT2-3AVL,BHA3-0ARS,EVE1-0IPS,NEW2-1HUL,NFO0-1COV,MCI5-3SUN,LEE0-0CRY,BOU0-1LIV,FUL1-1MUN","ARS2-1LEE,AVL2-2BRE,CHE5-1BOU,IPS2-1FUL,SUN0-2BHA,MUN1-1TOT,CRY3-1NFO,HUL2-2EVE,LIV0-3MCI,COV4-1NEW","EVE0-2CHE,BRE1-2LIV,FUL1-0HUL,MCI3-2IPS,NEW0-1AVL,BOU2-0SUN,BHA5-0CRY,LEE1-1MUN,NFO0-1ARS,TOT3-1COV","IPS1-1NFO,AVL2-1MCI,ARS2-0EVE,COV0-1FUL,CHE0-2TOT,CRY0-2NEW,HUL1-1BRE,LIV2-0BHA,MUN0-3BOU,SUN0-0LEE","CHE2-0MUN,BOU2-0LEE,BRE2-0NFO,COV3-1SUN,HUL2-2IPS,MCI0-1BHA,TOT2-0CRY,AVL1-1FUL,LIV0-1ARS,NEW0-1EVE","EVE3-1COV,LEE1-0TOT,ARS1-0HUL,FUL1-1NEW,NFO3-1MCI,BHA2-0BRE,CRY1-3LIV,IPS1-2BOU,SUN1-0CHE,MUN4-4AVL","MCI1-1FUL,BOU2-0NFO,AVL0-0SUN,CHE1-4LEE,COV3-2CRY,TOT2-0IPS,NEW2-2ARS,HUL2-0BHA,LIV4-0MUN,BRE4-0EVE"];
 function pois(l){const p=[Math.exp(-l)];for(let k=1;k<=10;k++)p.push(p[k-1]*l/k);return p}
 let clubChart=null;
 function renderClub(code){
  const c=CLUBS[code], atk=(c[4]/11)/MU, defW=(c[5]/11)/MU;
- const sel=document.getElementById('clubSelect'); sel.value=code;
- let rows='',labelsC=[],xf=[],xa=[],totXP=0,totXGF=0,totXGA=0;
- FIX.forEach((gws,i)=>{const gw=12+i; let fixture=null,home=false,opp=null;
-   gws.split(',').forEach(m=>{const [h,a]=m.split('-'); if(h===code){fixture=m;home=true;opp=a} if(a===code){fixture=m;home=false;opp=h}});
+ document.getElementById('clubSelect').value=code;
+ document.getElementById('clubFollowName').textContent=c[0]+' only';
+ // --- Backtest GW1-11: expanding-window, prior weeks only (goals-based strengths) ---
+ const LG=303/220; // league goals per team-match
+ const cum={}; Object.keys(CLUBS).forEach(k=>cum[k]={gf:0,ga:0,n:0});
+ const prior=k=>{const cu=cum[k];return{a:((cu.gf+4*LG)/(cu.n+4))/LG,d:((cu.ga+4*LG)/(cu.n+4))/LG}}; // 4-match league-mean prior: stops 1-game samples exploding
+ let rows='',labelsC=[],xf=[],xa=[],agf=[],aga=[],hits=0,maeF=0,maeA=0,sumPF=0,sumAF=0,sumPA=0,sumAA=0,bigMiss='',bigErr=-1;
+ const outcome=(f,a)=>f>a?'W':f<a?'L':'D';
+ const tags=(gf,ga,pf,pa,hit)=>{
+   if(hit && Math.abs(gf-pf)<0.8 && Math.abs(ga-pa)<0.8) return '— (within normal variance)';
+   const t=[];
+   if(gf-pf>=1.2)t.push('Scored well above pred: check clinical finishing, penalties/VAR-awarded pen, GK errors');
+   if(gf-pf<=-1.2)t.push('Scored well below pred: check missed big chances, disallowed/VAR goals, injured/absent finisher');
+   if(ga-pa>=1.2)t.push('Conceded well above pred: check red card, defensive injuries, set-pieces, VAR pen against');
+   if(ga-pa<=-1.2)t.push('Conceded well below pred: check GK performance, opponent finishing, low block');
+   if(gf+ga>=5 && pf+pa<3)t.push('Open/high-event game: check early goal/game state, end-to-end tactics');
+   if(gf+ga<=1 && pf+pa>3)t.push('Low-event game: check adverse weather/pitch, congestion/fatigue, cautious tactics');
+   if(!hit)t.push('Outcome miss: result turned on moments the averages cannot see — verify in match report before blaming the model');
+   return t.length?t.join('; '):'Small miss: normal Poisson variance, no single cause needed';};
+ PAST.forEach((gws,gi)=>{const gw=gi+1; let my=null;
+   const parsed=gws.split(',').map(m=>{const mm=m.match(/^([A-Z]{3})(\d+)-(\d+)([A-Z]{3})$/);return{h:mm[1],hg:+mm[2],ag:+mm[3],a:mm[4]}});
+   parsed.forEach(m=>{if(m.h===code||m.a===code)my=m});
+   const home=my.h===code, opp=home?my.a:my.h, gf=home?my.hg:my.ag, ga=home?my.ag:my.hg;
+   const me=prior(code), op=prior(opp);
+   const pf=MU*me.a*op.d*(home?1.15:0.85), pa=MU*op.a*me.d*(home?0.85:1.15);
+   const predO=outcome(pf,pa), actO=outcome(gf,ga), hit=predO===actO; if(hit)hits++;
+   const err=(Math.abs(gf-pf)+Math.abs(ga-pa))/2; maeF+=Math.abs(gf-pf); maeA+=Math.abs(ga-pa); sumPF+=pf; sumAF+=gf; sumPA+=pa; sumAA+=ga;
+   if(err>bigErr){bigErr=err;bigMiss=`GW${gw} v ${CLUBS[opp][0]} (actual ${gf}–${ga}, pred ${pf.toFixed(1)}–${pa.toFixed(1)})`}
+   labelsC.push('GW'+gw); xf.push(+pf.toFixed(2)); xa.push(+pa.toFixed(2)); agf.push(gf); aga.push(ga);
+   rows+=`<tr><td>GW${gw}</td><td>${dateMap[gw]}</td><td>${CLUBS[my.h][0]} v ${CLUBS[my.a][0]}</td><td>${home?'Home':'Away'}</td><td class="act">${gf}–${ga} · ${actO}</td><td>${pf.toFixed(2)} – ${pa.toFixed(2)}</td><td>${predO}</td><td>${hit?'✅ Yes':'❌ No'}</td><td>${err.toFixed(2)}</td><td>${tags(gf,ga,pf,pa,hit)}</td><td>— (backtest)</td></tr>`;
+   parsed.forEach(m=>{cum[m.h].gf+=m.hg;cum[m.h].ga+=m.ag;cum[m.h].n++;cum[m.a].gf+=m.ag;cum[m.a].ga+=m.hg;cum[m.a].n++});});
+ // --- Learning correction from backtest bias (shrunk, capped) ---
+ const corrF=Math.min(1.18,Math.max(0.85,1+0.5*((sumAF/Math.max(sumPF,0.01))-1)));
+ const corrA=Math.min(1.18,Math.max(0.85,1+0.5*((sumAA/Math.max(sumPA,0.01))-1)));
+ // --- Future GW12-38, corrected ---
+ let totXP=0,totXGF=0,totXGA=0;
+ FIX.forEach((gws,i)=>{const gw=12+i; let home=false,opp=null;
+   gws.split(',').forEach(m=>{const [h,a]=m.split('-'); if(h===code){home=true;opp=a} if(a===code){home=false;opp=h}});
    const o=CLUBS[opp], oAtk=(o[4]/11)/MU, oDef=(o[5]/11)/MU, wave=FOUR_PROJ[i]/MU;
-   const myXG=MU*atk*oDef*(home?1.15:0.85)*wave, opXG=MU*oAtk*defW*(home?0.85:1.15)*wave;
+   const myXG=MU*atk*corrF*oDef*(home?1.15:0.85)*wave, opXG=MU*oAtk*defW*corrA*(home?0.85:1.15)*wave;
    const ph=pois(home?myXG:opXG), pa=pois(home?opXG:myXG);
    let W=0,D=0,best='',bp=-1;
    for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){const p=ph[hg]*pa[ag]; if(hg>ag)W+=p; else if(hg===ag)D+=p; if(p>bp){bp=p;best=hg+'–'+ag}}
-   const myW=home?W:(()=>{let s=0;for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){if(ag>hg)s+=ph[hg]*pa[ag]}return s})(), myL=Math.max(0,1-myW-D), xp=3*myW+D;
-   totXP+=xp; totXGF+=myXG; totXGA+=opXG; labelsC.push('GW'+gw); xf.push(+myXG.toFixed(2)); xa.push(+opXG.toFixed(2));
-   const [hc,ac]=fixture.split('-');
-   rows+=`<tr><td>GW${gw}</td><td>${dateMap[gw].replace(' (Projected)','')}</td><td>${CLUBS[hc][0]} v ${CLUBS[ac][0]}</td><td>${home?'Home':'Away'}</td><td>${myXG.toFixed(2)}</td><td>${opXG.toFixed(2)}</td><td>${home?best:best.split('–').reverse().join('–')} <span style="color:#888">(you first)</span></td><td>${(myW*100).toFixed(0)} / ${(D*100).toFixed(0)} / ${(myL*100).toFixed(0)}</td><td>${xp.toFixed(2)}</td></tr>`;});
+   let aW=0; for(let hg=0;hg<=10;hg++)for(let ag=0;ag<=10;ag++){if(ag>hg)aW+=ph[hg]*pa[ag]}
+   const winP=home?W:aW, loseP=Math.max(0,1-winP-D), xp=3*winP+D;
+   totXP+=xp; totXGF+=myXG; totXGA+=opXG; labelsC.push('GW'+gw); xf.push(+myXG.toFixed(2)); xa.push(+opXG.toFixed(2)); agf.push(null); aga.push(null);
+   rows+=`<tr><td>GW${gw}</td><td>${dateMap[gw].replace(' (Projected)','')}</td><td>${CLUBS[gws.split(',').find(m=>m.includes(code)).split('-')[0]][0]} v ${CLUBS[gws.split(',').find(m=>m.includes(code)).split('-')[1]][0]}</td><td>${home?'Home':'Away'}</td><td class="proj">Projected</td><td>${myXG.toFixed(2)} – ${opXG.toFixed(2)}</td><td>${outcome(myXG,opXG)}</td><td>—</td><td>—</td><td>Future: add VAR/weather/injury/congestion tags when the match is played, then refit</td><td>${(winP*100).toFixed(0)} / ${(D*100).toFixed(0)} / ${(loseP*100).toFixed(0)} · ${xp.toFixed(2)}</td></tr>`;});
  document.querySelector('#clubTbl tbody').innerHTML=rows;
  document.getElementById('clubKpis').innerHTML=
   `<div class="kpi"><b>${c[1]} pts</b><span><strong>${c[0]}</strong> after GW11 · GF ${c[2]} · GA ${c[3]}</span></div>`+
-  `<div class="kpi"><b>${(c[4]/11).toFixed(2)}</b><span>xG For / match (attack strength ${atk.toFixed(2)}× league)</span></div>`+
-  `<div class="kpi"><b>${(c[5]/11).toFixed(2)}</b><span>xG Against / match (defensive weakness ${defW.toFixed(2)}× league)</span></div>`+
-  `<div class="kpi"><b>${totXGF.toFixed(1)} / ${totXGA.toFixed(1)}</b><span>Projected total xG For / Against, GW12–38</span></div>`+
-  `<div class="kpi"><b>${totXP.toFixed(1)}</b><span>Projected expected points, GW12–38 (Poisson W/D/L)</span></div>`;
- document.getElementById('clubNote').textContent=`Reading it: ${c[0]} project to about ${(totXGF/27).toFixed(2)} xG for and ${(totXGA/27).toFixed(2)} against per match over the run-in. Expected points are probabilities, not promises — a 60% win chance still loses 4 times in 10. Model frozen at GW11 strengths; Fourier wave and venue factors included; no injury, suspension, transfer or congestion adjustments yet (see Fourier section for what those would need).`;
+  `<div class="kpi"><b>${(c[4]/11).toFixed(2)} / ${(c[5]/11).toFixed(2)}</b><span>${c[0]} Opta xG For / Against per match (attack ${atk.toFixed(2)}×, def-weakness ${defW.toFixed(2)}×)</span></div>`+
+  `<div class="kpi"><b>${hits}/11</b><span>Backtest outcome hits for ${c[0]} (prior-weeks-only predictions)</span></div>`+
+  `<div class="kpi"><b>×${corrF.toFixed(2)} / ×${corrA.toFixed(2)}</b><span>Learning correction applied to future xG For / Against from backtest bias</span></div>`+
+  `<div class="kpi"><b>${totXP.toFixed(1)}</b><span>Projected expected points GW12–38 · xG ${totXGF.toFixed(1)} for / ${totXGA.toFixed(1)} against</span></div>`;
+ document.getElementById('clubBacktest').innerHTML=
+  `<div class="kpi"><b>${(maeF/11).toFixed(2)}</b><span>Backtest mean abs. error — goals scored vs predicted (per match)</span></div>`+
+  `<div class="kpi"><b>${(maeA/11).toFixed(2)}</b><span>Backtest mean abs. error — goals conceded vs predicted</span></div>`+
+  `<div class="kpi"><b style="font-size:18px">${bigMiss}</b><span>Biggest single miss — start the VAR / weather / red-card / injury check here</span></div>`;
+ document.getElementById('clubNote').textContent=`How to use this for ${c[0]}: after each real gameweek, compare the new result with the row's prediction. A small error (<~0.8 goals) is normal luck. A big one earns its investigation tag — only upgrade a tag to a cause if the match report confirms it (red card/VAR/injury) or the weather record does. Then the model learns in the open: strengths and the ×${corrF.toFixed(2)}/×${corrA.toFixed(2)} corrections refit on the enlarged window. Probabilities are not promises: a 60% win chance still fails 4 times in 10.`;
  if(clubChart)clubChart.destroy();
- clubChart=new Chart(document.getElementById('clubChart'),{type:'line',data:{labels:labelsC,datasets:[
-  {label:c[0]+' — predicted xG For',data:xf,borderColor:'#37003c',backgroundColor:'#37003c',borderWidth:3,pointRadius:3,tension:.3},
-  {label:c[0]+' — predicted xG Against',data:xa,borderColor:'#ff2882',backgroundColor:'#ff2882',borderWidth:3,pointRadius:3,tension:.3},
-  {label:'League mean (1.41)',data:labelsC.map(()=>MU),borderColor:'#999',borderDash:[5,5],borderWidth:1.5,pointRadius:0}]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:c[0]+' — weekly predicted xG, GW12–38'}},scales:{y:{title:{display:true,text:'Predicted xG'},suggestedMin:0,suggestedMax:3}}}});
+ clubChart=new Chart(document.getElementById('clubChart'),{data:{labels:labelsC,datasets:[
+  {type:'bar',label:c[0]+' — actual goals For (GW1–11)',data:agf,backgroundColor:'rgba(55,0,60,.75)'},
+  {type:'bar',label:c[0]+' — actual goals Against (GW1–11)',data:aga,backgroundColor:'rgba(255,40,130,.55)'},
+  {type:'line',label:c[0]+' — predicted xG For (backtest GW1–11, then GW12–38)',data:xf,borderColor:'#e69f00',backgroundColor:'#e69f00',borderWidth:3,pointRadius:2,tension:.3},
+  {type:'line',label:c[0]+' — predicted xG Against',data:xa,borderColor:'#04a5c0',backgroundColor:'#04a5c0',borderWidth:3,pointRadius:2,tension:.3}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:c[0]+' — GW1–38: actual goals (bars) vs predicted xG (lines)'}},scales:{y:{title:{display:true,text:'Goals / predicted xG'},suggestedMin:0,suggestedMax:5}}}});
  try{localStorage.setItem('plxg-club',code)}catch(e){}
 }
 const clubSel=document.getElementById('clubSelect');
